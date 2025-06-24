@@ -51,19 +51,31 @@ export function useInbox() {
   const queryClient = useQueryClient();
 
   // Fetch available domains
-  const { data: domains = [] } = useQuery({
+  const { 
+    data: domains = [], 
+    isLoading: domainsLoading,
+    isError: domainsError,
+    error: domainsErrorMessage 
+  } = useQuery({
     queryKey: ['domains'],
     queryFn: () => mailApi.getDomains(),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   // Create inbox mutation
   const createInboxMutation = useMutation({
     mutationFn: async () => {
       console.log('🚀 Creating new inbox...');
+      console.log('📋 Available domains:', domains);
+      
       const activeDomains = domains.filter(d => d.isActive && !d.isPrivate);
+      console.log('✅ Active domains:', activeDomains);
+      
       if (activeDomains.length === 0) {
-        throw new Error('No available domains');
+        console.error('❌ No available domains found');
+        throw new Error('No available domains found. Please try again later.');
       }
 
       const randomDomain = activeDomains[Math.floor(Math.random() * activeDomains.length)];
@@ -310,6 +322,12 @@ export function useInbox() {
     isAuthenticated: inboxState.isAuthenticated,
     expiresAt: inboxState.expiresAt,
     isExpired,
+    
+    // Domain state
+    domains,
+    domainsLoading,
+    domainsError,
+    domainsErrorMessage,
     
     // Loading states
     isCreating: createInboxMutation.isPending,

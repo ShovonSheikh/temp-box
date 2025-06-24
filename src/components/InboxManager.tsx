@@ -12,7 +12,7 @@ import {
 import { useInbox } from '../hooks/useInbox';
 import { formatDistanceToNow } from 'date-fns';
 import { useEffect, useState } from 'react';
-import { toast } from 'react-hot-toast'; // Add this import for toast notifications
+import { toast } from 'react-hot-toast';
 
 interface InboxManagerProps {
   onMessageSelect: (messageId: string) => void;
@@ -20,7 +20,7 @@ interface InboxManagerProps {
 
 export function InboxManager({ onMessageSelect }: InboxManagerProps) {
   const [showDebug, setShowDebug] = useState(false);
-  const [timer, setTimer] = useState(600); // 10 minutes in seconds
+  const [timer, setTimer] = useState(0);
   const [timerExpired, setTimerExpired] = useState(false);
   const {
     account,
@@ -37,20 +37,43 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
     deleteMessage,
     isCreating,
     createInbox,
+    expiresAt,
+    domains,
+    domainsLoading,
+    domainsError,
+    domainsErrorMessage,
   } = useInbox();
+
+  // Initialize timer based on expiresAt
+  useEffect(() => {
+    if (expiresAt && isAuthenticated && !isExpired) {
+      const now = new Date();
+      const timeLeft = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
+      setTimer(timeLeft);
+      setTimerExpired(timeLeft <= 0);
+    } else {
+      setTimer(0);
+      setTimerExpired(false);
+    }
+  }, [expiresAt, isAuthenticated, isExpired]);
 
   // Timer countdown effect
   useEffect(() => {
-    if (!isAuthenticated || isExpired || isDeleting || timerExpired) return;
-    if (timer <= 0) {
-      setTimerExpired(true);
-      deleteInbox();
-      toast.error('Your inbox has been deleted (timer expired).'); // Show toast
-      return;
-    }
+    if (!isAuthenticated || isExpired || isDeleting || timerExpired || timer <= 0) return;
+    
     const interval = setInterval(() => {
-      setTimer((prev) => prev - 1);
+      setTimer((prev) => {
+        const newTimer = prev - 1;
+        if (newTimer <= 0) {
+          setTimerExpired(true);
+          deleteInbox();
+          toast.error('Your inbox has been deleted (timer expired).');
+          return 0;
+        }
+        return newTimer;
+      });
     }, 1000);
+    
     return () => clearInterval(interval);
   }, [isAuthenticated, isExpired, isDeleting, timer, timerExpired, deleteInbox]);
 
@@ -66,21 +89,29 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
       accountId: account?.id,
       accountAddress: account?.address,
       isCreating,
+      domainsLoading,
+      domainsError,
+      domainsCount: domains?.length || 0,
     });
 
     // Force a re-render check
     if (messages && messages.length > 0) {
       console.log('🎯 MESSAGES FOUND! Should be displaying:', messages);
     }
-  }, [messages, isAuthenticated, messagesLoading, isMessagesError, messagesError, account, isCreating]);
+  }, [messages, isAuthenticated, messagesLoading, isMessagesError, messagesError, account, isCreating, domainsLoading, domainsError, domains]);
 
-  // Automatically create inbox if not authenticated
+  // Automatically create inbox if not authenticated and domains are available
   useEffect(() => {
-    if (!isAuthenticated && !isCreating) {
-      console.log('🚀 Auto-creating inbox...');
-      createInbox();
+    if (!isAuthenticated && !isCreating && !domainsLoading && !domainsError && domains && domains.length > 0) {
+      const activeDomains = domains.filter(d => d.isActive && !d.isPrivate);
+      if (activeDomains.length > 0) {
+        console.log('🚀 Auto-creating inbox with available domains...');
+        createInbox();
+      } else {
+        console.warn('⚠️ No active domains available for inbox creation');
+      }
     }
-  }, [isAuthenticated, isCreating, createInbox]);
+  }, [isAuthenticated, isCreating, createInbox, domainsLoading, domainsError, domains]);
 
   const handleDeleteMessage = (messageId: string, event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent opening message when deleting
@@ -94,7 +125,8 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
     refetchMessages();
   };
 
-  if (!isAuthenticated || !account) {
+  // Show domain loading/error states
+  if (domainsLoading) {
     return (
       <div className="space-y-6">
         <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-3xl p-6 shadow-lg border border-slate-200/50 dark:border-slate-700/50">
@@ -102,14 +134,14 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
             <div className="flex items-center space-x-3">
               <Inbox className="w-5 h-5 text-violet-600 dark:text-violet-400" />
               <h2 className="text-lg font-display font-medium text-slate-900 dark:text-slate-100">
-                {isCreating ? 'Creating Inbox...' : 'Initializing Inbox'}
+                Loading Domains...
               </h2>
             </div>
           </div>
           <div className="flex flex-col items-center justify-center space-y-3 py-8">
             <Loader2 className="w-6 h-6 text-violet-600 dark:text-violet-400 animate-spin" />
             <p className="text-slate-600 dark:text-slate-400">
-              {isCreating ? 'Setting up your secure inbox...' : 'Preparing your inbox...'}
+              Fetching available email domains...
             </p>
             <p className="text-sm text-slate-500 dark:text-slate-500">This should only take a few seconds</p>
           </div>
@@ -117,6 +149,85 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
       </div>
     );
   }
+
+  if (domainsError) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-3xl p-6 shadow-lg border border-slate-200/50 dark:border-slate-700/50">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+              <h2 className="text-lg font-display font-medium text-slate-900 dark:text-slate-100">
+                Domain Error
+              </h2>
+            </div>
+          </div>
+          <div className="flex flex-col items-center justify-center space-y-3 py-8">
+            <AlertCircle className="w-8 h-8 text-red-500 dark:text-red-400" />
+            <p className="text-red-600 dark:text-red-400 font-medium">Failed to load email domains</p>
+            <p className="text-sm text-slate-500 dark:text-slate-500 text-center">
+              {domainsErrorMessage?.message || 'Unable to fetch available domains'}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !account) {
+    const activeDomains = domains?.filter(d => d.isActive && !d.isPrivate) || [];
+    const hasActiveDomains = activeDomains.length > 0;
+
+    return (
+      <div className="space-y-6">
+        <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-3xl p-6 shadow-lg border border-slate-200/50 dark:border-slate-700/50">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <Inbox className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+              <h2 className="text-lg font-display font-medium text-slate-900 dark:text-slate-100">
+                {isCreating ? 'Creating Inbox...' : hasActiveDomains ? 'Initializing Inbox' : 'No Domains Available'}
+              </h2>
+            </div>
+          </div>
+          <div className="flex flex-col items-center justify-center space-y-3 py-8">
+            {hasActiveDomains ? (
+              <>
+                <Loader2 className="w-6 h-6 text-violet-600 dark:text-violet-400 animate-spin" />
+                <p className="text-slate-600 dark:text-slate-400">
+                  {isCreating ? 'Setting up your secure inbox...' : 'Preparing your inbox...'}
+                </p>
+                <p className="text-sm text-slate-500 dark:text-slate-500">This should only take a few seconds</p>
+              </>
+            ) : (
+              <>
+                <AlertCircle className="w-8 h-8 text-orange-500 dark:text-orange-400" />
+                <p className="text-orange-600 dark:text-orange-400 font-medium">No email domains available</p>
+                <p className="text-sm text-slate-500 dark:text-slate-500 text-center">
+                  There are currently no active email domains available for creating inboxes.
+                </p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="px-4 py-2 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors"
+                >
+                  Refresh Page
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Calculate timer values for 1 hour (3600 seconds)
+  const totalDuration = 3600; // 1 hour in seconds
+  const timerProgress = Math.max(0, (timer / totalDuration) * 100);
 
   return (
     <div className="space-y-6">
@@ -127,12 +238,12 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
             <Inbox className="w-5 h-5 text-violet-600 dark:text-violet-400" />
             <h2 className="text-lg font-display font-medium text-slate-900 dark:text-slate-100">Your Inbox</h2>
             {/* Timer display */}
-            {isAuthenticated && !isExpired && !timerExpired && (
+            {isAuthenticated && !isExpired && !timerExpired && timer > 0 && (
               <span
                 className={`ml-4 px-3 py-1 rounded-full font-mono text-xs transition-colors duration-500 ${
-                  timer > 180
+                  timer > 1800 // 30 minutes
                     ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-200'
-                    : timer > 60
+                    : timer > 600 // 10 minutes
                     ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-200'
                     : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-200'
                 }`}
@@ -144,16 +255,16 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
               </span>
             )}
             {/* Timer progress bar */}
-            {isAuthenticated && !isExpired && !timerExpired && (
+            {isAuthenticated && !isExpired && !timerExpired && timer > 0 && (
               <div className="ml-4 w-32 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden" title="Timer progress">
                 <div
                   className="h-2 transition-all duration-500"
                   style={{
-                    width: `${(timer / 600) * 100}%`,
+                    width: `${timerProgress}%`,
                     background:
-                      timer > 180
+                      timer > 1800 // 30 minutes
                         ? '#4ade80' // green-400
-                        : timer > 60
+                        : timer > 600 // 10 minutes
                         ? '#facc15' // yellow-400
                         : '#f87171', // red-400
                   }}
@@ -231,6 +342,10 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
               <div>• Authenticated: {isAuthenticated ? 'Yes' : 'No'}</div>
               <div>• Account ID: {account?.id || 'None'}</div>
               <div>• Account Address: {account?.address || 'None'}</div>
+              <div>• Timer: {timer}s ({Math.floor(timer / 60)}m {timer % 60}s)</div>
+              <div>• Expires At: {expiresAt?.toLocaleString() || 'None'}</div>
+              <div>• Domains Count: {domains?.length || 0}</div>
+              <div>• Active Domains: {domains?.filter(d => d.isActive && !d.isPrivate).length || 0}</div>
               {messages && messages.length > 0 && (
                 <div className="mt-2 p-2 bg-green-100 dark:bg-green-900/20 rounded">
                   <div className="font-bold text-green-800 dark:text-green-200">First Message:</div>
