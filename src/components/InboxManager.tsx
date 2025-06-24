@@ -8,11 +8,13 @@ import {
   AlertCircle,
   RefreshCw,
   Bug,
+  Settings,
 } from 'lucide-react';
 import { useInbox } from '../hooks/useInbox';
 import { formatDistanceToNow } from 'date-fns';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
+import { SystemStats } from './SystemStats';
 
 interface InboxManagerProps {
   onMessageSelect: (messageId: string) => void;
@@ -20,6 +22,7 @@ interface InboxManagerProps {
 
 export function InboxManager({ onMessageSelect }: InboxManagerProps) {
   const [showDebug, setShowDebug] = useState(false);
+  const [showSystemStats, setShowSystemStats] = useState(false);
   const [timer, setTimer] = useState(0);
   const [timerExpired, setTimerExpired] = useState(false);
   const {
@@ -287,6 +290,14 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
               <Bug className="w-5 h-5" />
             </button>
             <button
+              onClick={() => setShowSystemStats(true)}
+              className="p-2 text-slate-600 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50"
+              title="System statistics"
+              aria-label="System statistics"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+            <button
               onClick={handleRefresh}
               disabled={messagesLoading}
               className="p-2 text-slate-600 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 disabled:opacity-50 active:scale-95 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
@@ -486,6 +497,12 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
           )}
         </div>
       </div>
+      
+      {/* System Stats Modal */}
+      <SystemStats 
+        isOpen={showSystemStats} 
+        onClose={() => setShowSystemStats(false)} 
+      />
     </div>
   );
 }

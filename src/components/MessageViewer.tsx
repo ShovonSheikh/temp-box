@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Mail, Clock, User, ArrowLeft, Eye, Code, FileText } from 'lucide-react';
+import { X, Mail, Clock, User, ArrowLeft } from 'lucide-react';
 import { useMessage } from '../hooks/useMessage';
 import { formatDistanceToNow } from '../utils/dateUtils';
 import toast from 'react-hot-toast';
@@ -74,7 +74,7 @@ export function MessageViewer({ messageId, onClose }: MessageViewerProps) {
           <div className="flex justify-end p-2">
             <button
               onClick={handleCopy}
-              className="p-2 text-slate-600 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 active:scale-95 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
+              className="p-2 text-slate-600 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 active:scale-95 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800 font-bold shadow-md"
               title="Copy message content"
               disabled={isLoading || !message}
             >
@@ -137,22 +137,13 @@ export function MessageViewer({ messageId, onClose }: MessageViewerProps) {
 
               {/* View Mode Tabs */}
               <div className="flex border-b border-slate-200/50 dark:border-slate-700/50">
-                {[
-                  { mode: 'html' as ViewMode, label: 'HTML', icon: Eye },
-                  { mode: 'text' as ViewMode, label: 'Text', icon: FileText },
-                  { mode: 'raw' as ViewMode, label: 'Raw', icon: Code },
-                ].map(({ mode, label, icon: Icon }) => (
+                {['html', 'text', 'raw'].map((mode) => (
                   <button
                     key={mode}
-                    onClick={() => setViewMode(mode)}
-                    className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors ${
-                      viewMode === mode
-                        ? 'text-violet-600 dark:text-violet-400 border-b-2 border-violet-600 dark:border-violet-400'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                    }`}
+                    onClick={() => setViewMode(mode as ViewMode)}
+                    className={`px-4 py-2 font-medium transition-all border-b-2 ${viewMode === mode ? 'border-violet-600 text-violet-600 dark:text-violet-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-400'}`}
                   >
-                    <Icon className="w-4 h-4" />
-                    <span>{label}</span>
+                    {mode.toUpperCase()}
                   </button>
                 ))}
               </div>

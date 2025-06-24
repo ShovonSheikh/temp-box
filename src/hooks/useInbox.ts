@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { mailApi } from '../services/mailApi';
+import { storageService } from '../services/storageService';
+import { cleanupService } from '../services/cleanupService';
 import { MailAccount, MailMessage } from '../types/api';
 import toast from 'react-hot-toast';
 
@@ -116,8 +118,14 @@ export function useInbox() {
 
       setInboxState(newState);
 
-      // Save to localStorage
+      // Save to localStorage (legacy support)
       localStorage.setItem('inbox-state', JSON.stringify(newState));
+
+      // Store account data with enhanced metadata
+      storageService.storeAccount(account, password, token.token, expiresAt);
+
+      // Start automated cleanup service if not already running
+      cleanupService.startAutomatedCleanup();
 
       toast.success('Inbox created successfully!', {
         icon: '📬',
@@ -156,6 +164,11 @@ export function useInbox() {
         // Ensure we always return an array
         const messagesArray = Array.isArray(result) ? result : [];
         console.log('✅ Processed messages array:', messagesArray);
+        
+        // Update access tracking for current account
+        if (inboxState.account) {
+          storageService.updateAccountAccess(inboxState.account.id, messagesArray.length);
+        }
         
         return messagesArray;
       } catch (error) {
