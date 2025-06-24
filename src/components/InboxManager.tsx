@@ -8,6 +8,8 @@ import {
   AlertCircle,
   RefreshCw,
   Bug,
+  Clock,
+  AlertTriangle,
 } from 'lucide-react';
 import { useInbox } from '../hooks/useInbox';
 import { formatDistanceToNow } from 'date-fns';
@@ -20,8 +22,6 @@ interface InboxManagerProps {
 
 export function InboxManager({ onMessageSelect }: InboxManagerProps) {
   const [showDebug, setShowDebug] = useState(false);
-  const [timer, setTimer] = useState(0);
-  const [timerExpired, setTimerExpired] = useState(false);
   const {
     account,
     messages,
@@ -38,44 +38,15 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
     isCreating,
     createInbox,
     expiresAt,
+    createdAt,
+    timeRemaining,
+    formattedTimeRemaining,
+    showWarning,
     domains,
     domainsLoading,
     domainsError,
     domainsErrorMessage,
   } = useInbox();
-
-  // Initialize timer based on expiresAt
-  useEffect(() => {
-    if (expiresAt && isAuthenticated && !isExpired) {
-      const now = new Date();
-      const timeLeft = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
-      setTimer(timeLeft);
-      setTimerExpired(timeLeft <= 0);
-    } else {
-      setTimer(0);
-      setTimerExpired(false);
-    }
-  }, [expiresAt, isAuthenticated, isExpired]);
-
-  // Timer countdown effect
-  useEffect(() => {
-    if (!isAuthenticated || isExpired || isDeleting || timerExpired || timer <= 0) return;
-    
-    const interval = setInterval(() => {
-      setTimer((prev) => {
-        const newTimer = prev - 1;
-        if (newTimer <= 0) {
-          setTimerExpired(true);
-          deleteInbox();
-          toast.error('Your inbox has been deleted (timer expired).');
-          return 0;
-        }
-        return newTimer;
-      });
-    }, 1000);
-    
-    return () => clearInterval(interval);
-  }, [isAuthenticated, isExpired, isDeleting, timer, timerExpired, deleteInbox]);
 
   // Debug logging to track messages data flow
   useEffect(() => {
@@ -92,26 +63,15 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
       domainsLoading,
       domainsError,
       domainsCount: domains?.length || 0,
+      timeRemaining,
+      showWarning,
     });
 
     // Force a re-render check
     if (messages && messages.length > 0) {
       console.log('🎯 MESSAGES FOUND! Should be displaying:', messages);
     }
-  }, [messages, isAuthenticated, messagesLoading, isMessagesError, messagesError, account, isCreating, domainsLoading, domainsError, domains]);
-
-  // Automatically create inbox if not authenticated and domains are available
-  useEffect(() => {
-    if (!isAuthenticated && !isCreating && !domainsLoading && !domainsError && domains && domains.length > 0) {
-      const activeDomains = domains.filter(d => d.isActive && !d.isPrivate);
-      if (activeDomains.length > 0) {
-        console.log('🚀 Auto-creating inbox with available domains...');
-        createInbox();
-      } else {
-        console.warn('⚠️ No active domains available for inbox creation');
-      }
-    }
-  }, [isAuthenticated, isCreating, createInbox, domainsLoading, domainsError, domains]);
+  }, [messages, isAuthenticated, messagesLoading, isMessagesError, messagesError, account, isCreating, domainsLoading, domainsError, domains, timeRemaining, showWarning]);
 
   const handleDeleteMessage = (messageId: string, event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent opening message when deleting
@@ -225,58 +185,96 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
     );
   }
 
-  // Calculate timer values for 1 hour (3600 seconds)
+  // Calculate timer progress for visual indicator
   const totalDuration = 3600; // 1 hour in seconds
-  const timerProgress = Math.max(0, (timer / totalDuration) * 100);
+  const timerProgress = Math.max(0, (timeRemaining / totalDuration) * 100);
 
   return (
     <div className="space-y-6">
+      {/* Expiration Warning Banner */}
+      {showWarning && timeRemaining > 0 && (
+        <div className={`p-4 rounded-2xl border-l-4 ${
+          timeRemaining <= 600 // 10 minutes
+            ? 'bg-red-50 dark:bg-red-900/20 border-red-500 dark:border-red-400'
+            : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-500 dark:border-yellow-400'
+        }`}>
+          <div className="flex items-center space-x-3">
+            <AlertTriangle className={`w-5 h-5 ${
+              timeRemaining <= 600 
+                ? 'text-red-600 dark:text-red-400' 
+                : 'text-yellow-600 dark:text-yellow-400'
+            }`} />
+            <div>
+              <p className={`font-medium ${
+                timeRemaining <= 600 
+                  ? 'text-red-800 dark:text-red-200' 
+                  : 'text-yellow-800 dark:text-yellow-200'
+              }`}>
+                {timeRemaining <= 600 ? 'Inbox expires soon!' : 'Inbox expiring soon'}
+              </p>
+              <p className={`text-sm ${
+                timeRemaining <= 600 
+                  ? 'text-red-600 dark:text-red-300' 
+                  : 'text-yellow-600 dark:text-yellow-300'
+              }`}>
+                Your temporary inbox will be automatically deleted in {formattedTimeRemaining}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Inbox Header */}
       <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-3xl p-6 shadow-lg border border-slate-200/50 dark:border-slate-700/50">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
             <Inbox className="w-5 h-5 text-violet-600 dark:text-violet-400" />
             <h2 className="text-lg font-display font-medium text-slate-900 dark:text-slate-100">Your Inbox</h2>
-            {/* Timer display */}
-            {isAuthenticated && !isExpired && !timerExpired && timer > 0 && (
-              <span
-                className={`ml-4 px-3 py-1 rounded-full font-mono text-xs transition-colors duration-500 ${
-                  timer > 1800 // 30 minutes
-                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-200'
-                    : timer > 600 // 10 minutes
-                    ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-200'
-                    : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-200'
-                }`}
-                title="Time left before inbox deletion"
-              >
-                {`${Math.floor(timer / 60).toString().padStart(2, '0')}:${(timer % 60)
-                  .toString()
-                  .padStart(2, '0')}`} left
-              </span>
-            )}
-            {/* Timer progress bar */}
-            {isAuthenticated && !isExpired && !timerExpired && timer > 0 && (
-              <div className="ml-4 w-32 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden" title="Timer progress">
-                <div
-                  className="h-2 transition-all duration-500"
-                  style={{
-                    width: `${timerProgress}%`,
-                    background:
-                      timer > 1800 // 30 minutes
-                        ? '#4ade80' // green-400
-                        : timer > 600 // 10 minutes
-                        ? '#facc15' // yellow-400
-                        : '#f87171', // red-400
-                  }}
-                ></div>
+            
+            {/* Enhanced Timer Display */}
+            {isAuthenticated && !isExpired && timeRemaining > 0 && (
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  <Clock className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                  <span
+                    className={`px-3 py-1 rounded-full font-mono text-sm font-medium transition-colors duration-500 ${
+                      timeRemaining > 1800 // 30 minutes
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-200'
+                        : timeRemaining > 600 // 10 minutes
+                        ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-200'
+                        : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-200'
+                    }`}
+                    title="Time remaining before automatic deletion"
+                  >
+                    {formattedTimeRemaining}
+                  </span>
+                </div>
+                
+                {/* Timer Progress Bar */}
+                <div className="w-32 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden" title="Timer progress">
+                  <div
+                    className="h-2 transition-all duration-500 rounded-full"
+                    style={{
+                      width: `${timerProgress}%`,
+                      background:
+                        timeRemaining > 1800 // 30 minutes
+                          ? '#4ade80' // green-400
+                          : timeRemaining > 600 // 10 minutes
+                          ? '#facc15' // yellow-400
+                          : '#f87171', // red-400
+                    }}
+                  ></div>
+                </div>
               </div>
             )}
-            {timerExpired && (
-              <span className="ml-4 px-3 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-200 font-mono text-xs">
-                Inbox deleted (timer expired)
+            
+            {isExpired && (
+              <span className="px-3 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-200 font-mono text-sm">
+                Expired
               </span>
             )}
           </div>
+          
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setShowDebug(!showDebug)}
@@ -288,7 +286,7 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
             </button>
             <button
               onClick={handleRefresh}
-              disabled={messagesLoading}
+              disabled={messagesLoading || isExpired}
               className="p-2 text-slate-600 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 disabled:opacity-50 active:scale-95 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
               title="Refresh messages"
               aria-label="Refresh messages"
@@ -321,6 +319,24 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
           </button>
         </div>
 
+        {/* Inbox Metadata */}
+        {(createdAt || expiresAt) && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-600 dark:text-slate-400">
+            {createdAt && (
+              <div className="flex items-center space-x-2">
+                <span className="font-medium">Created:</span>
+                <span>{formatDistanceToNow(createdAt, { addSuffix: true })}</span>
+              </div>
+            )}
+            {expiresAt && (
+              <div className="flex items-center space-x-2">
+                <span className="font-medium">Expires:</span>
+                <span>{formatDistanceToNow(expiresAt, { addSuffix: true })}</span>
+              </div>
+            )}
+          </div>
+        )}
+
         {isExpired && (
           <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-2xl">
             <p className="text-sm text-red-600 dark:text-red-400">
@@ -342,7 +358,10 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
               <div>• Authenticated: {isAuthenticated ? 'Yes' : 'No'}</div>
               <div>• Account ID: {account?.id || 'None'}</div>
               <div>• Account Address: {account?.address || 'None'}</div>
-              <div>• Timer: {timer}s ({Math.floor(timer / 60)}m {timer % 60}s)</div>
+              <div>• Time Remaining: {timeRemaining}s ({formattedTimeRemaining})</div>
+              <div>• Show Warning: {showWarning ? 'Yes' : 'No'}</div>
+              <div>• Is Expired: {isExpired ? 'Yes' : 'No'}</div>
+              <div>• Created At: {createdAt?.toLocaleString() || 'None'}</div>
               <div>• Expires At: {expiresAt?.toLocaleString() || 'None'}</div>
               <div>• Domains Count: {domains?.length || 0}</div>
               <div>• Active Domains: {domains?.filter(d => d.isActive && !d.isPrivate).length || 0}</div>
@@ -420,8 +439,6 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
                 <button
                   onClick={handleRefresh}
                   className="px-4 py-2 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors"
-                >
-                  Refresh
                 </button>
               </div>
             </div>
