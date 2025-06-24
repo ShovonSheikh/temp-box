@@ -1,0 +1,43 @@
+Here’s a structured flow for managing emails using the Mail.tm API, including steps for generating a new email, fetching messages, retrieving a specific message's content, and deleting the email address:
+
+## Mail.tm API Email Management Flow
+
+### 1. Generate a New Email
+- **Endpoint:** `POST /accounts`
+- **Body Parameters:**
+  - `address`: The email address to create (e.g., `user@domain.com`)
+  - `password`: A secure password for the account
+- **Steps:**
+  1. Make a POST request to `/accounts` with the body parameters.
+  2. **Response:**
+     - If successful, receive account details including `id`, `address`, and other metadata.
+
+### 2. Fetch Messages
+- **Endpoint:** `GET /messages`
+- **Query Parameters:**
+  - `page`: The collection page number (optional)
+- **Steps:**
+  1. Make a GET request to `/messages` to retrieve all messages for the created email.
+  2. **Response:**
+     - A list of messages with details like `id`, `from`, `subject`, and `intro`.
+
+### 3. Fetch a Specific Message Content
+- **Endpoint:** `GET /messages/{id}`
+- **Path Parameters:**
+  - `id`: The ID of the specific message to fetch
+- **Steps:**
+  1. Identify the message ID from the previous step's response.
+  2. Make a GET request to `/messages/{id}`.
+  3. **Response:**
+     - Detailed content of the specific message, including `text`, `html`, `attachments`, etc.
+
+### 4. Delete the Email Address
+- **Endpoint:** `DELETE /accounts/{id}`
+- **Path Parameters:**
+  - `id`: The ID of the account to delete
+- **Steps:**
+  1. Make a DELETE request to `/accounts/{id}` using the account ID obtained during the email creation.
+  2. **Response:**
+     - Returns status code 204 if successful, indicating the account has been deleted.
+
+This flow provides a clear and concise guide for managing emails using the Mail.tm API. If you need further details or modifications, feel free to ask!
