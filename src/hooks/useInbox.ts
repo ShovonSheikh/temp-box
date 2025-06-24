@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { mailApi } from '../services/mailApi';
 import { MailAccount, MailMessage } from '../types/api';
@@ -136,13 +136,7 @@ export function useInbox() {
   });
 
   // Fetch messages with enhanced debugging
-  const { 
-    data: messages = [], 
-    isLoading: messagesLoading,
-    refetch: refetchMessages,
-    isError: isMessagesError,
-    error: messagesError,
-  } = useQuery<MailMessage[]>({
+  const messagesQuery = useQuery<MailMessage[]>({
     queryKey: ['messages', inboxState.account?.id],
     queryFn: async () => {
       console.log('🔍 Fetching messages...');
@@ -175,9 +169,9 @@ export function useInbox() {
       }
     },
     enabled: !!inboxState.account && inboxState.isAuthenticated && !!inboxState.token,
-    refetchInterval: (data) => {
-      // More frequent polling if no messages, less frequent if we have messages
-      return data && data.length > 0 ? 10000 : 3000; // 10s vs 3s
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      return Array.isArray(data) && data.length > 0 ? 10000 : 3000;
     },
     staleTime: 0, // Always consider data stale to ensure fresh fetches
     retry: (failureCount, error) => {
@@ -187,10 +181,17 @@ export function useInbox() {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
+  const messages = useMemo(() => messagesQuery.data ?? [], [messagesQuery.data]);
+  const messagesLoading = messagesQuery.isLoading;
+  const refetchMessages = messagesQuery.refetch;
+  const isMessagesError = messagesQuery.isError;
+  const messagesError = messagesQuery.error;
+
   // Enhanced logging for messages state changes
   useEffect(() => {
+    const messagesCount = Array.isArray(messages) ? messages.length : 0;
     console.log('📊 Messages state updated:', {
-      messagesCount: messages?.length || 0,
+      messagesCount,
       messages: messages,
       isAuthenticated: inboxState.isAuthenticated,
       messagesLoading,
