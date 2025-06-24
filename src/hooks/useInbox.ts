@@ -10,15 +10,6 @@ interface InboxState {
   isAuthenticated: boolean;
   expiresAt: Date | null;
   token: string | null;
-  createdAt: Date | null;
-}
-
-interface CleanupLog {
-  accountId: string;
-  deletedAt: Date;
-  reason: string;
-  success: boolean;
-  error?: string;
 }
 
 export function useInbox() {
@@ -33,7 +24,6 @@ export function useInbox() {
           return {
             ...parsed,
             expiresAt: parsed.expiresAt ? new Date(parsed.expiresAt) : null,
-            createdAt: parsed.createdAt ? new Date(parsed.createdAt) : null,
             token: parsed.token,
           };
         }
@@ -48,13 +38,8 @@ export function useInbox() {
       isAuthenticated: false,
       expiresAt: null,
       token: null,
-      createdAt: null,
     };
   });
-
-  // Timer state for countdown display
-  const [timeRemaining, setTimeRemaining] = useState<number>(0);
-  const [showWarning, setShowWarning] = useState<boolean>(false);
 
   // Always set token on mount if present
   useEffect(() => {
@@ -79,97 +64,7 @@ export function useInbox() {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
-  // Calculate time remaining and update timer
-  useEffect(() => {
-    if (!inboxState.expiresAt || !inboxState.isAuthenticated) {
-      setTimeRemaining(0);
-      setShowWarning(false);
-      return;
-    }
-
-    const updateTimer = () => {
-      const now = new Date();
-      const remaining = Math.max(0, Math.floor((inboxState.expiresAt!.getTime() - now.getTime()) / 1000));
-      setTimeRemaining(remaining);
-
-      // Show warning at 30 minutes (1800 seconds) and 10 minutes (600 seconds)
-      const shouldShowWarning = remaining <= 1800 && remaining > 0;
-      setShowWarning(shouldShowWarning);
-
-      // Auto-cleanup when expired
-      if (remaining <= 0 && inboxState.account) {
-        handleExpiredInbox();
-      }
-    };
-
-    // Update immediately
-    updateTimer();
-
-    // Update every second for accurate countdown
-    const interval = setInterval(updateTimer, 1000);
-    return () => clearInterval(interval);
-  }, [inboxState.expiresAt, inboxState.isAuthenticated, inboxState.account]);
-
-  // Handle expired inbox cleanup
-  const handleExpiredInbox = useCallback(async () => {
-    if (!inboxState.account) return;
-
-    console.log('⏰ Inbox expired, initiating cleanup...');
-    
-    try {
-      // Log cleanup attempt
-      const cleanupLog: CleanupLog = {
-        accountId: inboxState.account.id,
-        deletedAt: new Date(),
-        reason: 'timer_expired',
-        success: false,
-      };
-
-      // Attempt to delete from mail.tm
-      try {
-        await mailApi.deleteAccount(inboxState.account.id);
-        cleanupLog.success = true;
-        console.log('✅ Account deleted from mail.tm successfully');
-      } catch (error) {
-        cleanupLog.success = false;
-        cleanupLog.error = error instanceof Error ? error.message : 'Unknown error';
-        console.error('❌ Failed to delete account from mail.tm:', error);
-      }
-
-      // Store cleanup log
-      const existingLogs = JSON.parse(localStorage.getItem('cleanup-logs') || '[]');
-      existingLogs.push(cleanupLog);
-      // Keep only last 50 logs
-      if (existingLogs.length > 50) {
-        existingLogs.splice(0, existingLogs.length - 50);
-      }
-      localStorage.setItem('cleanup-logs', JSON.stringify(existingLogs));
-
-      // Clear local state regardless of API success
-      setInboxState({
-        account: null,
-        password: '',
-        isAuthenticated: false,
-        expiresAt: null,
-        token: null,
-        createdAt: null,
-      });
-      
-      mailApi.clearToken();
-      localStorage.removeItem('inbox-state');
-      queryClient.removeQueries({ queryKey: ['messages'] });
-      
-      toast.error('Inbox has expired and been deleted', {
-        icon: '⏰',
-        duration: 5000,
-      });
-
-    } catch (error) {
-      console.error('❌ Error during cleanup process:', error);
-    }
-  }, [inboxState.account, queryClient]);
-
-  // Create inbox mutation with enhanced error handling
+  // Create inbox mutation
   const createInboxMutation = useMutation({
     mutationFn: async () => {
       console.log('🚀 Creating new inbox...');
@@ -208,26 +103,25 @@ export function useInbox() {
       return { account: verifiedAccount, password, token };
     },
     onSuccess: ({ account, password, token }) => {
-      const now = new Date();
-      const expiresAt = new Date(now.getTime() + (60 * 60 * 1000)); // 1 hour from now
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 1); // 1 hour expiry
 
       const newState = {
         account,
         password,
         isAuthenticated: true,
         expiresAt,
-        createdAt: now,
         token: token.token,
       };
 
       setInboxState(newState);
 
-      // Save to localStorage with creation timestamp
+      // Save to localStorage
       localStorage.setItem('inbox-state', JSON.stringify(newState));
 
-      toast.success('Inbox created successfully! Valid for 1 hour.', {
+      toast.success('Inbox created successfully!', {
         icon: '📬',
-        duration: 4000,
+        duration: 3000,
       });
 
       // Start polling for messages immediately
@@ -241,7 +135,7 @@ export function useInbox() {
     },
   });
 
-  // Fetch messages with enhanced polling and error handling
+  // Fetch messages with enhanced debugging
   const { 
     data: messages = [], 
     isLoading: messagesLoading,
@@ -263,20 +157,6 @@ export function useInbox() {
         
         if (result && result.length > 0) {
           console.log('📧 First message sample:', result[0]);
-          
-          // Show notification for new messages
-          const lastCheck = localStorage.getItem('last-message-check');
-          const lastCheckTime = lastCheck ? new Date(lastCheck) : new Date(0);
-          const newMessages = result.filter(msg => new Date(msg.createdAt) > lastCheckTime);
-          
-          if (newMessages.length > 0) {
-            toast.success(`${newMessages.length} new message(s) received!`, {
-              icon: '📧',
-              duration: 3000,
-            });
-          }
-          
-          localStorage.setItem('last-message-check', new Date().toISOString());
         }
         
         // Ensure we always return an array
@@ -294,11 +174,9 @@ export function useInbox() {
         throw error;
       }
     },
-    enabled: !!inboxState.account && inboxState.isAuthenticated && !!inboxState.token && timeRemaining > 0,
+    enabled: !!inboxState.account && inboxState.isAuthenticated && !!inboxState.token,
     refetchInterval: (data) => {
       // More frequent polling if no messages, less frequent if we have messages
-      // Stop polling if expired
-      if (timeRemaining <= 0) return false;
       return data && data.length > 0 ? 10000 : 3000; // 10s vs 3s
     },
     staleTime: 0, // Always consider data stale to ensure fresh fetches
@@ -309,35 +187,23 @@ export function useInbox() {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
-  // Delete inbox mutation with enhanced cleanup
-  const deleteInboxMutation = useMutation({
-    mutationFn: async () => {
-      if (!inboxState.account) throw new Error('No inbox to delete');
-      
-      const cleanupLog: CleanupLog = {
-        accountId: inboxState.account.id,
-        deletedAt: new Date(),
-        reason: 'user_requested',
-        success: false,
-      };
+  // Enhanced logging for messages state changes
+  useEffect(() => {
+    console.log('📊 Messages state updated:', {
+      messagesCount: messages?.length || 0,
+      messages: messages,
+      isAuthenticated: inboxState.isAuthenticated,
+      messagesLoading,
+      accountId: inboxState.account?.id,
+      accountAddress: inboxState.account?.address,
+      isMessagesError,
+      messagesError: messagesError?.message,
+    });
+  }, [messages, inboxState.isAuthenticated, messagesLoading, inboxState.account, isMessagesError, messagesError]);
 
-      try {
-        await mailApi.deleteAccount(inboxState.account.id);
-        cleanupLog.success = true;
-      } catch (error) {
-        cleanupLog.success = false;
-        cleanupLog.error = error instanceof Error ? error.message : 'Unknown error';
-        throw error;
-      } finally {
-        // Store cleanup log
-        const existingLogs = JSON.parse(localStorage.getItem('cleanup-logs') || '[]');
-        existingLogs.push(cleanupLog);
-        if (existingLogs.length > 50) {
-          existingLogs.splice(0, existingLogs.length - 50);
-        }
-        localStorage.setItem('cleanup-logs', JSON.stringify(existingLogs));
-      }
-    },
+  // Delete inbox mutation
+  const deleteInboxMutation = useMutation({
+    mutationFn: () => mailApi.deleteAccount(inboxState.account!.id),
     onSuccess: () => {
       setInboxState({
         account: null,
@@ -345,11 +211,9 @@ export function useInbox() {
         isAuthenticated: false,
         expiresAt: null,
         token: null,
-        createdAt: null,
       });
       mailApi.clearToken();
       localStorage.removeItem('inbox-state');
-      localStorage.removeItem('last-message-check');
       queryClient.removeQueries({ queryKey: ['messages'] });
       toast.success('Inbox deleted successfully!', {
         icon: '🗑️',
@@ -411,24 +275,31 @@ export function useInbox() {
   }, []);
 
   // Check if inbox is expired
-  const isExpired = timeRemaining <= 0 && inboxState.isAuthenticated;
+  const isExpired = inboxState.expiresAt ? new Date() > inboxState.expiresAt : false;
 
-  // Automatically create inbox if not authenticated and domains are available
+  // Auto-cleanup expired inbox
   useEffect(() => {
-    if (!inboxState.isAuthenticated && !createInboxMutation.isPending && !domainsLoading && !domainsError && domains && domains.length > 0) {
-      const activeDomains = domains.filter(d => d.isActive && !d.isPrivate);
-      if (activeDomains.length > 0) {
-        console.log('🚀 Auto-creating inbox with available domains...');
-        createInboxMutation.mutate();
-      } else {
-        console.warn('⚠️ No active domains available for inbox creation');
-      }
+    if (isExpired && inboxState.account) {
+      console.log('⏰ Inbox expired, cleaning up...');
+      setInboxState({
+        account: null,
+        password: '',
+        isAuthenticated: false,
+        expiresAt: null,
+        token: null,
+      });
+      mailApi.clearToken();
+      localStorage.removeItem('inbox-state');
+      queryClient.removeQueries({ queryKey: ['messages'] });
+      toast.error('Inbox has expired', {
+        icon: '⏰',
+      });
     }
-  }, [inboxState.isAuthenticated, createInboxMutation.isPending, createInboxMutation.mutate, domainsLoading, domainsError, domains]);
+  }, [isExpired, inboxState.account, queryClient]);
 
   // Enhanced error handling and auto-refresh
   useEffect(() => {
-    if (isMessagesError && inboxState.isAuthenticated && timeRemaining > 0) {
+    if (isMessagesError && inboxState.isAuthenticated) {
       console.log('🔄 Messages error detected, will retry in 5 seconds:', messagesError);
       const timer = setTimeout(() => {
         console.log('🔄 Retrying messages fetch...');
@@ -436,7 +307,7 @@ export function useInbox() {
       }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [isMessagesError, inboxState.isAuthenticated, refetchMessages, messagesError, timeRemaining]);
+  }, [isMessagesError, inboxState.isAuthenticated, refetchMessages, messagesError]);
 
   // Ensure messages is always an array and log any issues
   const safeMessages = Array.isArray(messages) ? messages : [];
@@ -444,30 +315,13 @@ export function useInbox() {
     console.warn('⚠️ Messages is not an array:', messages);
   }
 
-  // Format time remaining for display
-  const formatTimeRemaining = useCallback((seconds: number) => {
-    if (seconds <= 0) return '00:00:00';
-    
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  }, []);
-
   return {
     // State
     account: inboxState.account,
     messages: safeMessages,
     isAuthenticated: inboxState.isAuthenticated,
     expiresAt: inboxState.expiresAt,
-    createdAt: inboxState.createdAt,
     isExpired,
-    
-    // Timer state
-    timeRemaining,
-    formattedTimeRemaining: formatTimeRemaining(timeRemaining),
-    showWarning,
     
     // Domain state
     domains,

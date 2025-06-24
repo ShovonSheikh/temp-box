@@ -22,7 +22,6 @@ import { InboxManager } from './components/InboxManager';
 import { MessageViewer } from './components/MessageViewer';
 import { BlogModal } from './components/BlogModal';
 import { ThemeToggle } from './components/ThemeToggle';
-import { CleanupStatus } from './components/CleanupStatus';
 import { AdSenseAd } from './components/AdSenseAd';
 import { blogPosts } from './data/blog';
 
@@ -147,7 +146,6 @@ function AppContent() {
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-violet-600 to-cyan-600 transition-all duration-300 group-hover:w-full"></span>
                 </button>
               ))}
-              <CleanupStatus />
               <ThemeToggle />
             </div>
 
@@ -179,9 +177,6 @@ function AppContent() {
                 {item === 'HowItWorks' ? 'How It Works' : item}
               </button>
             ))}
-            <div className="pt-4">
-              <CleanupStatus />
-            </div>
           </div>
         </div>
       </nav>
@@ -248,7 +243,7 @@ function AppContent() {
           </h1>
           
           <p className="text-xl md:text-2xl text-slate-600 dark:text-slate-400 mb-12 max-w-3xl mx-auto font-medium">
-            Temporary inboxes with automated cleanup and 7-day maximum retention.
+            Temporary inboxes, built for privacy and speed.
           </p>
           
           <button 
@@ -295,19 +290,19 @@ function AppContent() {
               {
                 icon: <Zap className="w-8 h-8" />,
                 title: "Create Inbox",
-                description: "One click, no login required. Auto-expires in 1 hour.",
+                description: "One click, no login required",
                 color: "from-violet-500 to-purple-500"
               },
               {
                 icon: <Copy className="w-8 h-8" />,
                 title: "Copy & Use",
-                description: "Use anywhere, anytime. Real-time message monitoring.",
+                description: "Anywhere, anytime you need it",
                 color: "from-cyan-500 to-teal-500"
               },
               {
                 icon: <RefreshCw className="w-8 h-8" />,
-                title: "Auto-Cleanup",
-                description: "Automatic deletion after expiry. Maximum 7-day retention.",
+                title: "Receive Instantly",
+                description: "Real-time updates, no waiting",
                 color: "from-orange-500 to-pink-500"
               }
             ].map((step, index) => (
@@ -329,7 +324,6 @@ function AppContent() {
           </div>
         </div>
       </section>
-      
       {/* Features Section */}
       <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-7xl mx-auto">
@@ -362,8 +356,8 @@ function AppContent() {
               },
               {
                 icon: <RefreshCw className="w-6 h-6" />,
-                title: "Real-time Updates",
-                description: "Emails appear instantly with live notifications",
+                title: "Real-time Loading",
+                description: "Emails appear instantly as they arrive",
                 gradient: "from-cyan-500 to-teal-500"
               },
               {
@@ -380,14 +374,14 @@ function AppContent() {
               },
               {
                 icon: <Sparkles className="w-6 h-6" />,
-                title: "Built-in Privacy",
+                title: "Built-in Anonymity",
                 description: "Your privacy is protected by design",
                 gradient: "from-blue-500 to-indigo-500"
               },
               {
                 icon: <Clock className="w-6 h-6" />,
-                title: "Auto-Cleanup",
-                description: "Automated deletion with 7-day maximum retention",
+                title: "Auto-expiry",
+                description: "Inboxes clean up automatically",
                 gradient: "from-red-500 to-rose-500"
               }
             ].map((feature, index) => (
@@ -409,7 +403,6 @@ function AppContent() {
           </div>
         </div>
       </section>
-      
       {/* Free Forever Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-4xl mx-auto">
@@ -435,35 +428,30 @@ function AppContent() {
                 <Heart className="w-8 h-8 text-white animate-pulse-gentle" />
               </div>
               <h2 className="font-display text-3xl md:text-4xl font-bold text-white mb-6">
-                Always Free. Automated Cleanup. Maximum Privacy.
+                Always Free. No Signups. No Hidden Fees.
               </h2>
               <p className="text-xl text-white/90 mb-8 leading-relaxed">
-                TempBox provides free temporary email with automated cleanup and a 7-day maximum retention policy. 
+                TempBox is committed to providing free temporary email services. 
                 We're supported by privacy-respecting, non-intrusive advertisements.
               </p>
               <div className="flex flex-wrap justify-center gap-4 text-white/90">
                 <div className="flex items-center">
                   <Check className="w-5 h-5 mr-2" />
-                  <span>1-hour auto-expiry</span>
-                </div>
-                <div className="flex items-center">
-                  <Check className="w-5 h-5 mr-2" />
-                  <span>7-day maximum retention</span>
-                </div>
-                <div className="flex items-center">
-                  <Check className="w-5 h-5 mr-2" />
-                  <span>Automated cleanup</span>
+                  <span>Privacy-first policies</span>
                 </div>
                 <div className="flex items-center">
                   <Check className="w-5 h-5 mr-2" />
                   <span>No data collection</span>
+                </div>
+                <div className="flex items-center">
+                  <Check className="w-5 h-5 mr-2" />
+                  <span>Open source friendly</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </section>
-      
       {/* Blog Section */}
       <section id="blog" className="py-20 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-7xl mx-auto">
@@ -516,7 +504,6 @@ function AppContent() {
           </div>
         </div>
       </section>
-      
       {/* Footer */}
       <footer className="py-16 px-4 sm:px-6 lg:px-8 relative z-10 border-t border-slate-200/50 dark:border-slate-700/50">
         <div className="max-w-7xl mx-auto">
@@ -525,7 +512,7 @@ function AppContent() {
               TempBox
             </div>
             <p className="text-slate-600 dark:text-slate-400 text-lg max-w-2xl mx-auto">
-              Making email privacy accessible with automated cleanup and maximum retention policies.
+              Making email privacy accessible, one temporary inbox at a time.
             </p>
           </div>
           <div className="text-center text-slate-500 dark:text-slate-500 text-sm space-y-2">
