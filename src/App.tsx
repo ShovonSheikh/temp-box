@@ -287,7 +287,7 @@ function AppContent() {
           >
             <span className="relative z-10 flex items-center">
               <Plus className="mr-2 w-5 h-5" />
-              Create Inbox (10 min)
+              Create Inbox
             </span>
             <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-teal-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </button>
