@@ -11,7 +11,9 @@
   },
   "dependencies": {
     "@tanstack/react-query": "",
+    "@types/dompurify": "^3.0.5",
     "date-fns": "",
+    "dompurify": "^3.2.6",
     "lucide-react": "",
     "react": "",
     "react-dom": "",

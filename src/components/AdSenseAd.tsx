@@ -27,7 +27,7 @@ export function AdSenseAd({
   const isAdPushed = useRef(false);
 
   useEffect(() => {
-    // Only push the ad once per component instance
+    // Only push the ad once per component instance and ensure content is present
     if (adRef.current && !isAdPushed.current) {
       try {
         // Initialize adsbygoogle array if it doesn't exist
@@ -35,11 +35,18 @@ export function AdSenseAd({
           window.adsbygoogle = [];
         }
         
-        // Push the ad to the queue
-        window.adsbygoogle.push({});
-        isAdPushed.current = true;
+        // Only push ads on pages with substantial content
+        const hasContent = document.body.innerText.length > 500;
         
-        console.log(`AdSense ad pushed for slot: ${slot}`);
+        if (hasContent) {
+          // Push the ad to the queue
+          window.adsbygoogle.push({});
+          isAdPushed.current = true;
+          
+          console.log(`AdSense ad pushed for slot: ${slot}`);
+        } else {
+          console.log(`AdSense ad skipped for slot ${slot} - insufficient content`);
+        }
       } catch (error) {
         console.error('Error pushing AdSense ad:', error);
       }
@@ -61,14 +68,16 @@ export function AdSenseAd({
   };
 
   return (
-    <ins
-      ref={adRef}
-      className={`adsbygoogle ${className}`}
-      style={defaultStyle}
-      data-ad-client={client}
-      data-ad-slot={slot}
-      data-ad-format={format}
-      data-full-width-responsive={responsive ? 'true' : 'false'}
-    />
+    <div className="ad-container" style={{ minHeight: '90px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <ins
+        ref={adRef}
+        className={`adsbygoogle ${className}`}
+        style={defaultStyle}
+        data-ad-client={client}
+        data-ad-slot={slot}
+        data-ad-format={format}
+        data-full-width-responsive={responsive ? 'true' : 'false'}
+      />
+    </div>
   );
 }

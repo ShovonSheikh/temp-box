@@ -9,12 +9,14 @@ import {
   RefreshCw,
   Bug,
   Settings,
+  Shield,
 } from 'lucide-react';
 import { useInbox } from '../hooks/useInbox';
 import { formatDistanceToNow } from 'date-fns';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { SystemStats } from './SystemStats';
+import { authService } from '../services/authService';
 
 interface InboxManagerProps {
   onMessageSelect: (messageId: string) => void;
@@ -25,6 +27,8 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
   const [showSystemStats, setShowSystemStats] = useState(false);
   const [timer, setTimer] = useState(0);
   const [timerExpired, setTimerExpired] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
+  
   const {
     account,
     messages,
@@ -47,7 +51,10 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
     domainsErrorMessage,
   } = useInbox();
 
-  // Initialize timer based on expiresAt
+  // Check if user is admin for settings access
+  const isAdmin = authService.isAdmin();
+
+  // Initialize timer based on expiresAt (10 minutes = 600 seconds)
   useEffect(() => {
     if (expiresAt && isAuthenticated && !isExpired) {
       const now = new Date();
@@ -80,6 +87,28 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
     return () => clearInterval(interval);
   }, [isAuthenticated, isExpired, isDeleting, timer, timerExpired, deleteInbox]);
 
+  // Scroll throttling to prevent excessive re-renders
+  useEffect(() => {
+    let scrollTimeout: NodeJS.Timeout;
+    
+    const handleScroll = () => {
+      setIsScrolling(true);
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        setIsScrolling(false);
+      }, 150);
+    };
+
+    const messagesContainer = document.querySelector('.messages-container');
+    if (messagesContainer) {
+      messagesContainer.addEventListener('scroll', handleScroll, { passive: true });
+      return () => {
+        messagesContainer.removeEventListener('scroll', handleScroll);
+        clearTimeout(scrollTimeout);
+      };
+    }
+  }, []);
+
   // Debug logging to track messages data flow
   useEffect(() => {
     console.log('🔍 InboxManager - Component state updated:', {
@@ -97,7 +126,6 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
       domainsCount: domains?.length || 0,
     });
 
-    // Force a re-render check
     if (messages && messages.length > 0) {
       console.log('🎯 MESSAGES FOUND! Should be displaying:', messages);
     }
@@ -117,15 +145,27 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
   }, [isAuthenticated, isCreating, createInbox, domainsLoading, domainsError, domains]);
 
   const handleDeleteMessage = (messageId: string, event: React.MouseEvent) => {
-    event.stopPropagation(); // Prevent opening message when deleting
+    event.stopPropagation();
     if (confirm('Are you sure you want to delete this message?')) {
       deleteMessage(messageId);
     }
   };
 
   const handleRefresh = () => {
+    if (isScrolling) return; // Prevent refresh during scrolling
     console.log('🔄 Manual refresh triggered');
     refetchMessages();
+  };
+
+  const handleSystemStatsClick = () => {
+    if (!isAdmin) {
+      toast.error('Access denied. Admin privileges required.', {
+        icon: '🔒',
+        duration: 3000,
+      });
+      return;
+    }
+    setShowSystemStats(true);
   };
 
   // Show domain loading/error states
@@ -173,7 +213,7 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors"
+              className="px-4 py-2 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2"
             >
               Retry
             </button>
@@ -216,7 +256,7 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
                 </p>
                 <button
                   onClick={() => window.location.reload()}
-                  className="px-4 py-2 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors"
+                  className="px-4 py-2 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2"
                 >
                   Refresh Page
                 </button>
@@ -228,8 +268,8 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
     );
   }
 
-  // Calculate timer values for 1 hour (3600 seconds)
-  const totalDuration = 3600; // 1 hour in seconds
+  // Calculate timer values for 10 minutes (600 seconds)
+  const totalDuration = 600; // 10 minutes in seconds
   const timerProgress = Math.max(0, (timer / totalDuration) * 100);
 
   return (
@@ -244,9 +284,9 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
             {isAuthenticated && !isExpired && !timerExpired && timer > 0 && (
               <span
                 className={`ml-4 px-3 py-1 rounded-full font-mono text-xs transition-colors duration-500 ${
-                  timer > 1800 // 30 minutes
+                  timer > 300 // 5 minutes
                     ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-200'
-                    : timer > 600 // 10 minutes
+                    : timer > 120 // 2 minutes
                     ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-200'
                     : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-200'
                 }`}
@@ -265,9 +305,9 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
                   style={{
                     width: `${timerProgress}%`,
                     background:
-                      timer > 1800 // 30 minutes
+                      timer > 300 // 5 minutes
                         ? '#4ade80' // green-400
-                        : timer > 600 // 10 minutes
+                        : timer > 120 // 2 minutes
                         ? '#facc15' // yellow-400
                         : '#f87171', // red-400
                   }}
@@ -283,24 +323,27 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setShowDebug(!showDebug)}
-              className="p-2 text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50"
+              className="p-2 text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
               title="Toggle debug info"
               aria-label="Toggle debug info"
             >
               <Bug className="w-5 h-5" />
             </button>
-            <button
-              onClick={() => setShowSystemStats(true)}
-              className="p-2 text-slate-600 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50"
-              title="System statistics"
-              aria-label="System statistics"
-            >
-              <Settings className="w-5 h-5" />
-            </button>
+            {/* Only show settings button for admin users */}
+            {isAdmin && (
+              <button
+                onClick={handleSystemStatsClick}
+                className="p-2 text-slate-600 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2"
+                title="System statistics (Admin only)"
+                aria-label="System statistics"
+              >
+                <Settings className="w-5 h-5" />
+              </button>
+            )}
             <button
               onClick={handleRefresh}
-              disabled={messagesLoading}
-              className="p-2 text-slate-600 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 disabled:opacity-50 active:scale-95 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
+              disabled={messagesLoading || isScrolling}
+              className="p-2 text-slate-600 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 disabled:opacity-50 active:scale-95 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2"
               title="Refresh messages"
               aria-label="Refresh messages"
             >
@@ -309,7 +352,7 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
             <button
               onClick={() => deleteInbox()}
               disabled={isDeleting}
-              className="p-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-all duration-200 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 active:scale-95 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
+              className="p-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-all duration-200 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 active:scale-95 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2"
               title="Delete inbox"
               aria-label="Delete inbox"
             >
@@ -325,7 +368,7 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
           </div>
           <button
             onClick={() => copyToClipboard(account.address)}
-            className="p-2 text-slate-600 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 active:scale-95 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
+            className="p-2 text-slate-600 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 active:scale-95 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2"
             title="Copy to clipboard"
           >
             <Copy className="w-5 h-5" />
@@ -357,6 +400,8 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
               <div>• Expires At: {expiresAt?.toLocaleString() || 'None'}</div>
               <div>• Domains Count: {domains?.length || 0}</div>
               <div>• Active Domains: {domains?.filter(d => d.isActive && !d.isPrivate).length || 0}</div>
+              <div>• Is Admin: {isAdmin ? 'Yes' : 'No'}</div>
+              <div>• Is Scrolling: {isScrolling ? 'Yes' : 'No'}</div>
               {messages && messages.length > 0 && (
                 <div className="mt-2 p-2 bg-green-100 dark:bg-green-900/20 rounded">
                   <div className="font-bold text-green-800 dark:text-green-200">First Message:</div>
@@ -386,7 +431,7 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
                 <span className="text-sm">Error loading messages</span>
                 <button
                   onClick={handleRefresh}
-                  className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                  className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded focus:outline-none focus:ring-2 focus:ring-red-400"
                   title="Retry"
                 >
                   <RefreshCw className="w-4 h-4" />
@@ -396,7 +441,7 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
           </div>
         </div>
 
-        <div className="max-h-96 overflow-y-auto">
+        <div className="messages-container max-h-96 overflow-y-auto scroll-smooth">
           {messagesLoading ? (
             <div className="p-6">
               <div className="flex items-center justify-center space-x-3">
@@ -414,7 +459,7 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
                 </p>
                 <button
                   onClick={handleRefresh}
-                  className="px-4 py-2 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors"
+                  className="px-4 py-2 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2"
                 >
                   Try Again
                 </button>
@@ -430,7 +475,7 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
                 </p>
                 <button
                   onClick={handleRefresh}
-                  className="px-4 py-2 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors"
+                  className="px-4 py-2 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2"
                 >
                   Refresh
                 </button>
@@ -457,7 +502,7 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
                   >
                     <button
                       onClick={() => onMessageSelect(message.id)}
-                      className="flex-1 p-4 text-left transition-all duration-200 hover:pl-6 focus:outline-none focus:bg-slate-100 dark:focus:bg-slate-700/70"
+                      className="flex-1 p-4 text-left transition-all duration-200 hover:pl-6 focus:outline-none focus:bg-slate-100 dark:focus:bg-slate-700/70 focus:ring-2 focus:ring-violet-400 focus:ring-inset"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 space-y-1">
@@ -485,7 +530,7 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
                     </button>
                     <button
                       onClick={(e) => handleDeleteMessage(message.id, e)}
-                      className="p-2 opacity-0 group-hover:opacity-100 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-all duration-200 mx-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 active:scale-95 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
+                      className="p-2 opacity-0 group-hover:opacity-100 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-all duration-200 mx-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 active:scale-95 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2"
                       title="Delete message"
                     >
                       <Trash className="w-4 h-4" />
@@ -498,11 +543,13 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
         </div>
       </div>
       
-      {/* System Stats Modal */}
-      <SystemStats 
-        isOpen={showSystemStats} 
-        onClose={() => setShowSystemStats(false)} 
-      />
+      {/* System Stats Modal - Only for admin users */}
+      {isAdmin && (
+        <SystemStats 
+          isOpen={showSystemStats} 
+          onClose={() => setShowSystemStats(false)} 
+        />
+      )}
     </div>
   );
 }

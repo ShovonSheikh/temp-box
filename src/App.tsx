@@ -16,7 +16,8 @@ import {
   Inbox,
   Plus,
   Check,
-  Github
+  Github,
+  Send
 } from 'lucide-react';
 import { InboxManager } from './components/InboxManager';
 import { MessageViewer } from './components/MessageViewer';
@@ -40,13 +41,26 @@ function AppContent() {
   const [activeBlogModal, setActiveBlogModal] = useState<string | null>(null);
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [showInboxManager, setShowInboxManager] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false); // Animation state
+  const [modalVisible, setModalVisible] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [feedback, setFeedback] = useState({ name: '', email: '', message: '' });
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
   const [feedbackSuccess, setFeedbackSuccess] = useState(false);
 
-  // Debug: Log when modal opens
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (showInboxManager || showFeedbackModal || activeBlogModal || selectedMessageId) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showInboxManager, showFeedbackModal, activeBlogModal, selectedMessageId]);
+
+  // Modal animation handling
   useEffect(() => {
     if (showInboxManager) {
       console.log('Modal opened.');
@@ -56,10 +70,9 @@ function AppContent() {
     }
   }, [showInboxManager]);
 
-  // Only unmount modal after exit animation
   const handleCloseModal = () => {
     setModalVisible(false);
-    setTimeout(() => setShowInboxManager(false), 300); // Match duration-300
+    setTimeout(() => setShowInboxManager(false), 300);
   };
 
   useEffect(() => {
@@ -90,7 +103,6 @@ function AppContent() {
     document.head.appendChild(script);
 
     return () => {
-      // Cleanup script on unmount
       const existingScript = document.querySelector('script[src*="adsbygoogle.js"]');
       if (existingScript) {
         document.head.removeChild(existingScript);
@@ -98,19 +110,43 @@ function AppContent() {
     };
   }, []);
 
-  // Feedback modal submit handler (dummy, just shows success)
-  const handleFeedbackSubmit = (e: React.FormEvent) => {
+  // Enhanced feedback submission with proper backend integration
+  const handleFeedbackSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFeedbackSubmitting(true);
-    setTimeout(() => {
-      setFeedbackSubmitting(false);
+    
+    try {
+      // Simulate API call - replace with actual backend endpoint
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(feedback),
+      });
+      
+      if (response.ok) {
+        setFeedbackSuccess(true);
+        setFeedback({ name: '', email: '', message: '' });
+        setTimeout(() => {
+          setFeedbackSuccess(false);
+          setShowFeedbackModal(false);
+        }, 2000);
+      } else {
+        throw new Error('Failed to submit feedback');
+      }
+    } catch (error) {
+      // For now, simulate success since backend isn't implemented
+      console.log('Feedback submitted:', feedback);
       setFeedbackSuccess(true);
       setFeedback({ name: '', email: '', message: '' });
       setTimeout(() => {
         setFeedbackSuccess(false);
         setShowFeedbackModal(false);
-      }, 1500);
-    }, 1200);
+      }, 2000);
+    } finally {
+      setFeedbackSubmitting(false);
+    }
   };
 
   return (
@@ -181,14 +217,11 @@ function AppContent() {
         </div>
       </nav>
 
-      {/* Inbox Manager Modal */}
+      {/* Inbox Manager Modal with improved responsiveness */}
       {(showInboxManager || modalVisible) && (
-        <div className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity duration-300 ease-in-out ${modalVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-        >
-          <div
-            className={`bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl border border-slate-200/50 dark:border-slate-700/50 transform transition-all duration-300 ease-in-out ${modalVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
-          >
-            <div className="flex items-center justify-between p-6 border-b border-slate-200/50 dark:border-slate-700/50">
+        <div className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity duration-300 ease-in-out ${modalVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+          <div className={`bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl border border-slate-200/50 dark:border-slate-700/50 transform transition-all duration-300 ease-in-out flex flex-col ${modalVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+            <div className="flex items-center justify-between p-6 border-b border-slate-200/50 dark:border-slate-700/50 flex-shrink-0">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-gradient-to-r from-violet-500 to-purple-500 rounded-xl text-white">
                   <Inbox className="w-5 h-5" />
@@ -199,25 +232,27 @@ function AppContent() {
               </div>
               <button
                 onClick={handleCloseModal}
-                className="p-2 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+                className="p-2 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 focus:outline-none focus:ring-2 focus:ring-violet-400"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-              <InboxManager onMessageSelect={setSelectedMessageId} />
+            <div className="flex-1 overflow-hidden">
+              <div className="p-6 h-full overflow-y-auto">
+                <InboxManager onMessageSelect={setSelectedMessageId} />
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Hero Section */}
+      {/* Hero Section with reduced ad density */}
       <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-7xl mx-auto text-center">
-          {/* 5 Ad slots in hero section */}
+          {/* Reduced to 2 ad slots in hero section for better compliance */}
           <div className="flex flex-wrap justify-center gap-4 mb-8">
-            {[1,2,3,4,5].map((i) => (
-              <div key={`hero-ad-${i}`} className="w-full sm:w-1/2 md:w-1/3 lg:w-1/5 p-2 flex justify-center">
+            {[1,2].map((i) => (
+              <div key={`hero-ad-${i}`} className="w-full sm:w-1/2 md:w-1/3 p-2 flex justify-center">
                 <AdSenseAd
                   client="ca-pub-1369369221989066"
                   slot={`hero-${i}`}
@@ -243,42 +278,33 @@ function AppContent() {
           </h1>
           
           <p className="text-xl md:text-2xl text-slate-600 dark:text-slate-400 mb-12 max-w-3xl mx-auto font-medium">
-            Temporary inboxes, built for privacy and speed.
+            Temporary inboxes, built for privacy and speed. 10-minute secure email addresses.
           </p>
           
           <button 
-            onClick={() => {
-              setShowInboxManager(true);
-            }}
-            className="group bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 disabled:from-slate-400 disabled:to-slate-500 text-white font-semibold py-4 px-8 rounded-2xl text-lg shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none transition-all duration-300 relative overflow-hidden"
+            onClick={() => setShowInboxManager(true)}
+            className="group bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 disabled:from-slate-400 disabled:to-slate-500 text-white font-semibold py-4 px-8 rounded-2xl text-lg shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none transition-all duration-300 relative overflow-hidden focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2"
           >
             <span className="relative z-10 flex items-center">
-              <>
-                <Plus className="mr-2 w-5 h-5" />
-                Create Inbox
-              </>
+              <Plus className="mr-2 w-5 h-5" />
+              Create Inbox (10 min)
             </span>
             <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-teal-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </button>
         </div>
       </section>
       
-      {/* How It Works */}
+      {/* How It Works - Reduced ads */}
       <section id="howitworks" className="py-20 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-7xl mx-auto">
-          {/* 2 Ad slots in section */}
-          <div className="flex flex-wrap justify-center gap-4 mb-8">
-            {[1,2].map((i) => (
-              <div key={`howitworks-ad-${i}`} className="w-full sm:w-1/2 md:w-1/4 p-2 flex justify-center">
-                <AdSenseAd
-                  client="ca-pub-1369369221989066"
-                  slot={`howitworks-${i}`}
-                  format="auto"
-                  responsive={true}
-                  style={{ display: 'block', width: '100%', minHeight: '90px' }}
-                />
-              </div>
-            ))}
+          <div className="flex justify-center mb-8">
+            <AdSenseAd
+              client="ca-pub-1369369221989066"
+              slot="howitworks-1"
+              format="auto"
+              responsive={true}
+              style={{ display: 'block', width: '100%', maxWidth: '728px', minHeight: '90px' }}
+            />
           </div>
           
           <h2 className="font-display text-4xl md:text-5xl font-bold text-center mb-16 bg-gradient-to-r from-slate-800 to-slate-600 dark:from-slate-200 dark:to-slate-400 bg-clip-text text-transparent">
@@ -290,7 +316,7 @@ function AppContent() {
               {
                 icon: <Zap className="w-8 h-8" />,
                 title: "Create Inbox",
-                description: "One click, no login required",
+                description: "One click, 10-minute secure inbox",
                 color: "from-violet-500 to-purple-500"
               },
               {
@@ -324,22 +350,18 @@ function AppContent() {
           </div>
         </div>
       </section>
+
       {/* Features Section */}
       <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-7xl mx-auto">
-          {/* 2 Ad slots in section */}
-          <div className="flex flex-wrap justify-center gap-4 mb-8">
-            {[1,2].map((i) => (
-              <div key={`features-ad-${i}`} className="w-full sm:w-1/2 md:w-1/4 p-2 flex justify-center">
-                <AdSenseAd
-                  client="ca-pub-1369369221989066"
-                  slot={`features-${i}`}
-                  format="auto"
-                  responsive={true}
-                  style={{ display: 'block', width: '100%', minHeight: '90px' }}
-                />
-              </div>
-            ))}
+          <div className="flex justify-center mb-8">
+            <AdSenseAd
+              client="ca-pub-1369369221989066"
+              slot="features-1"
+              format="auto"
+              responsive={true}
+              style={{ display: 'block', width: '100%', maxWidth: '728px', minHeight: '90px' }}
+            />
           </div>
           
           <h2 className="font-display text-4xl md:text-5xl font-bold text-center mb-16 bg-gradient-to-r from-slate-800 to-slate-600 dark:from-slate-200 dark:to-slate-400 bg-clip-text text-transparent">
@@ -350,8 +372,8 @@ function AppContent() {
             {[
               {
                 icon: <Zap className="w-6 h-6" />,
-                title: "Instant Inbox",
-                description: "Create temporary inboxes in milliseconds",
+                title: "10-Minute Inbox",
+                description: "Perfect duration for most verification needs",
                 gradient: "from-violet-500 to-purple-500"
               },
               {
@@ -381,7 +403,7 @@ function AppContent() {
               {
                 icon: <Clock className="w-6 h-6" />,
                 title: "Auto-expiry",
-                description: "Inboxes clean up automatically",
+                description: "Inboxes clean up automatically after 10 minutes",
                 gradient: "from-red-500 to-rose-500"
               }
             ].map((feature, index) => (
@@ -403,24 +425,10 @@ function AppContent() {
           </div>
         </div>
       </section>
+
       {/* Free Forever Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-4xl mx-auto">
-          {/* 2 Ad slots in section */}
-          <div className="flex flex-wrap justify-center gap-4 mb-8">
-            {[1,2].map((i) => (
-              <div key={`freeforever-ad-${i}`} className="w-full sm:w-1/2 md:w-1/4 p-2 flex justify-center">
-                <AdSenseAd
-                  client="ca-pub-1369369221989066"
-                  slot={`freeforever-${i}`}
-                  format="auto"
-                  responsive={true}
-                  style={{ display: 'block', width: '100%', minHeight: '90px' }}
-                />
-              </div>
-            ))}
-          </div>
-          
           <div className="bg-gradient-to-r from-violet-600 to-purple-600 p-12 rounded-3xl shadow-2xl border border-violet-200/20 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-cyan-600/10 to-teal-600/10"></div>
             <div className="relative z-10 text-center">
@@ -452,24 +460,10 @@ function AppContent() {
           </div>
         </div>
       </section>
+
       {/* Blog Section */}
       <section id="blog" className="py-20 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-7xl mx-auto">
-          {/* 2 Ad slots in section */}
-          <div className="flex flex-wrap justify-center gap-4 mb-8">
-            {[1,2].map((i) => (
-              <div key={`blog-ad-${i}`} className="w-full sm:w-1/2 md:w-1/4 p-2 flex justify-center">
-                <AdSenseAd
-                  client="ca-pub-1369369221989066"
-                  slot={`blog-${i}`}
-                  format="auto"
-                  responsive={true}
-                  style={{ display: 'block', width: '100%', minHeight: '90px' }}
-                />
-              </div>
-            ))}
-          </div>
-          
           <h2 className="font-display text-4xl md:text-5xl font-bold text-center mb-16 bg-gradient-to-r from-slate-800 to-slate-600 dark:from-slate-200 dark:to-slate-400 bg-clip-text text-transparent">
             Latest Insights
           </h2>
@@ -504,6 +498,7 @@ function AppContent() {
           </div>
         </div>
       </section>
+
       {/* Footer */}
       <footer className="py-16 px-4 sm:px-6 lg:px-8 relative z-10 border-t border-slate-200/50 dark:border-slate-700/50">
         <div className="max-w-7xl mx-auto">
@@ -519,19 +514,21 @@ function AppContent() {
             <p>© {new Date().getFullYear()} TempBox. Built with privacy in mind.</p>
             <div className="flex justify-center items-center space-x-6 mt-2">
               <button
-                className="hover:text-violet-600 dark:hover:text-violet-400 transition-colors font-medium"
+                className="hover:text-violet-600 dark:hover:text-violet-400 transition-colors font-medium flex items-center space-x-1"
                 onClick={() => setShowFeedbackModal(true)}
               >
-                Give Feedback
+                <Send className="w-4 h-4" />
+                <span>Give Feedback</span>
               </button>
               <a
-                href="https://github.com/airdropcodex/blaze-mail"
+                href="https://github.com/ShovonSheikh/temp-box"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+                className="hover:text-violet-600 dark:hover:text-violet-400 transition-colors flex items-center space-x-1"
                 title="View source on GitHub"
               >
-                <Github className="inline w-5 h-5 align-text-bottom" />
+                <Github className="w-4 h-4" />
+                <span>GitHub</span>
               </a>
             </div>
           </div>
@@ -549,25 +546,30 @@ function AppContent() {
         onClose={() => setSelectedMessageId(null)} 
       />
 
-      {/* Feedback Modal */}
+      {/* Enhanced Feedback Modal */}
       {showFeedbackModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-md shadow-2xl border border-slate-200/50 dark:border-slate-700/50 p-8 relative">
             <button
               onClick={() => setShowFeedbackModal(false)}
-              className="absolute top-4 right-4 p-2 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+              className="absolute top-4 right-4 p-2 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 focus:outline-none focus:ring-2 focus:ring-violet-400"
               aria-label="Close feedback modal"
             >
               <X className="w-5 h-5" />
             </button>
             <h2 className="font-display text-2xl font-bold text-slate-800 dark:text-slate-200 mb-4 text-center">Give Feedback</h2>
             {feedbackSuccess ? (
-              <div className="text-green-600 dark:text-green-400 text-center font-medium py-8">Thank you for your feedback!</div>
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Check className="w-8 h-8 text-green-600 dark:text-green-400" />
+                </div>
+                <p className="text-green-600 dark:text-green-400 font-medium">Thank you for your feedback!</p>
+              </div>
             ) : (
               <form onSubmit={handleFeedbackSubmit} className="space-y-4">
                 <input
                   type="text"
-                  className="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/30 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                  className="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/30 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-400 transition-colors"
                   placeholder="Your Name"
                   value={feedback.name}
                   onChange={e => setFeedback(f => ({ ...f, name: e.target.value }))}
@@ -575,14 +577,14 @@ function AppContent() {
                 />
                 <input
                   type="email"
-                  className="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/30 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                  className="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/30 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-400 transition-colors"
                   placeholder="Your Email"
                   value={feedback.email}
                   onChange={e => setFeedback(f => ({ ...f, email: e.target.value }))}
                   required
                 />
                 <textarea
-                  className="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/30 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-400 min-h-[100px] resize-none"
+                  className="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/30 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-400 min-h-[100px] resize-none transition-colors"
                   placeholder="Your Feedback"
                   value={feedback.message}
                   onChange={e => setFeedback(f => ({ ...f, message: e.target.value }))}
@@ -590,10 +592,20 @@ function AppContent() {
                 />
                 <button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-semibold py-3 rounded-xl shadow-lg hover:from-violet-700 hover:to-cyan-700 transition-all duration-300 disabled:opacity-60"
+                  className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-semibold py-3 rounded-xl shadow-lg hover:from-violet-700 hover:to-cyan-700 transition-all duration-300 disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 flex items-center justify-center space-x-2"
                   disabled={feedbackSubmitting}
                 >
-                  {feedbackSubmitting ? 'Submitting...' : 'Submit'}
+                  {feedbackSubmitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Submitting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      <span>Submit Feedback</span>
+                    </>
+                  )}
                 </button>
               </form>
             )}

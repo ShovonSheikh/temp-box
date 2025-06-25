@@ -66,7 +66,7 @@ export function useInbox() {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
-  // Create inbox mutation
+  // Create inbox mutation with 10-minute expiry
   const createInboxMutation = useMutation({
     mutationFn: async () => {
       console.log('🚀 Creating new inbox...');
@@ -106,7 +106,7 @@ export function useInbox() {
     },
     onSuccess: ({ account, password, token }) => {
       const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 1); // 1 hour expiry
+      expiresAt.setMinutes(expiresAt.getMinutes() + 10); // 10 minutes expiry
 
       const newState = {
         account,
@@ -127,7 +127,7 @@ export function useInbox() {
       // Start automated cleanup service if not already running
       cleanupService.startAutomatedCleanup();
 
-      toast.success('Inbox created successfully!', {
+      toast.success('Inbox created successfully! (10 minutes)', {
         icon: '📬',
         duration: 3000,
       });
@@ -143,7 +143,7 @@ export function useInbox() {
     },
   });
 
-  // Fetch messages with enhanced debugging
+  // Fetch messages with enhanced debugging and throttling
   const messagesQuery = useQuery<MailMessage[]>({
     queryKey: ['messages', inboxState.account?.id],
     queryFn: async () => {
@@ -184,14 +184,15 @@ export function useInbox() {
     enabled: !!inboxState.account && inboxState.isAuthenticated && !!inboxState.token,
     refetchInterval: (query) => {
       const data = query.state.data;
-      return Array.isArray(data) && data.length > 0 ? 10000 : 3000;
+      // Slower polling to reduce server load
+      return Array.isArray(data) && data.length > 0 ? 15000 : 5000; // 15s if has messages, 5s if empty
     },
-    staleTime: 0, // Always consider data stale to ensure fresh fetches
+    staleTime: 2000, // Consider data stale after 2 seconds
     retry: (failureCount, error) => {
       console.log(`🔄 Retry attempt ${failureCount} for messages fetch:`, error);
-      return failureCount < 3;
+      return failureCount < 2; // Reduced retry attempts
     },
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    retryDelay: (attemptIndex) => Math.min(2000 * 2 ** attemptIndex, 10000), // Faster retry with cap
   });
 
   const messages = useMemo(() => messagesQuery.data ?? [], [messagesQuery.data]);
@@ -311,14 +312,14 @@ export function useInbox() {
     }
   }, [isExpired, inboxState.account, queryClient]);
 
-  // Enhanced error handling and auto-refresh
+  // Enhanced error handling with reduced retry frequency
   useEffect(() => {
     if (isMessagesError && inboxState.isAuthenticated) {
-      console.log('🔄 Messages error detected, will retry in 5 seconds:', messagesError);
+      console.log('🔄 Messages error detected, will retry in 10 seconds:', messagesError);
       const timer = setTimeout(() => {
         console.log('🔄 Retrying messages fetch...');
         refetchMessages();
-      }, 5000);
+      }, 10000); // Increased retry delay
       return () => clearTimeout(timer);
     }
   }, [isMessagesError, inboxState.isAuthenticated, refetchMessages, messagesError]);
