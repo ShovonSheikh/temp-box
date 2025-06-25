@@ -33,6 +33,7 @@
     "tailwindcss": "",
     "typescript": "",
     "typescript-eslint": "",
-    "vite": ""
+    "vite": "",
+    "@rollup/rollup-linux-x64-gnu": ""
   }
 }
