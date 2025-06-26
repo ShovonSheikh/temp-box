@@ -1,75 +1,107 @@
-# Blaze Mail
+# TempBox
 
-Blaze Mail is a private and secure email service that allows users to send and receive emails without the need for a traditional email account. This project aims to provide a user-friendly interface while ensuring privacy and security.
+A modern, privacy-focused temporary email service frontend. Instantly create disposable inboxes for secure, anonymous, and spam-free email communication. Built with React, Vite, and Tailwind CSS.
 
 ## Features
 
-- **Privacy-Focused**: Send and receive emails without revealing your identity.
-- **No Traditional Account Required**: Use the service without needing a conventional email account.
-- **User-Friendly Interface**: Designed for ease of use while maintaining robust security.
+- **10-Minute Inboxes**: Create secure, disposable email addresses that auto-expire after 10 minutes.
+- **Real-Time Updates**: Instantly receive emails in your temporary inbox with real-time loading.
+- **No Signups Required**: Use all features anonymously—no registration or personal data needed.
+- **One-Click Copy**: Easily copy your temporary email address for use anywhere.
+- **Privacy-First**: No data collection, no tracking, and automatic cleanup of all inboxes and messages.
+- **Open Source**: Friendly for contributions and self-hosting.
+- **Blog & Insights**: Learn about privacy, digital wellness, and the tech behind temp inboxes.
+- **Feedback Modal**: Share your thoughts directly from the app.
+- **Responsive UI**: Beautiful, modern design with full mobile support.
 
-## Technology Stack
+## Tech Stack
 
-- **TypeScript**: For building scalable and maintainable applications.
-- **JavaScript**: For dynamic content and interactivity.
-- **HTML**: For structuring web content.
-- **CSS**: For styling the application.
+- **Frontend**: React (with hooks), Vite, TypeScript
+- **Styling**: Tailwind CSS, PostCSS
+- **State/Data**: React Query (@tanstack/react-query)
+- **Icons**: Lucide React
+- **Notifications**: react-hot-toast
+- **Ads**: Google AdSense integration (privacy-respecting)
 
-## Installation
+## Project Structure
 
-To get started with Blaze Mail, follow these steps:
+```
+├── public/                # Static assets
+├── src/
+│   ├── components/        # UI components (InboxManager, MessageViewer, etc.)
+│   ├── data/              # Static data (blog posts)
+│   ├── hooks/             # Custom React hooks
+│   ├── services/          # API and utility services
+│   ├── types/             # TypeScript types (API, domain models)
+│   ├── utils/             # Utility functions
+│   ├── App.tsx            # Main app component
+│   └── main.tsx           # App entry point
+├── index.html
+├── package.json
+├── tailwind.config.js
+├── postcss.config.js
+├── vite.config.ts
+├── tsconfig.json
+└── README.md
+```
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/airdropcodex/blaze-mail.git
+## Getting Started
+
+### Prerequisites
+- Node.js (v18+ recommended)
+- npm or yarn
+
+### Installation
+
+1. **Clone the repository:**
+   ```sh
+   git clone https://github.com/ShovonSheikh/temp-box.git
+   cd temp-box
    ```
-2. Navigate to the project directory:
-   ```bash
-   cd blaze-mail
-   ```
-3. Install the required dependencies:
-   ```bash
+2. **Install dependencies:**
+   ```sh
    npm install
+   # or
+   yarn install
    ```
-4. Start the application:
-   ```bash
+3. **Start the development server:**
+   ```sh
    npm run dev
+   # or
+   yarn dev
    ```
+4. **Open in your browser:**
+   Visit [http://localhost:5173](http://localhost:5173) (or the port shown in your terminal).
 
-## Usage
+### Build for Production
 
-Once the application is running, you can access it in your web browser at `http://localhost:5173`. Follow the on-screen instructions to send and receive emails securely.
+```sh
+npm run build
+# or
+yarn build
+```
+
+The output will be in the `dist/` folder.
+
+## Customization
+- **AdSense**: Update AdSense client/slot IDs in `src/components/AdSenseAd.tsx` if self-hosting.
+- **API Integration**: Connect to your backend by updating API endpoints in `src/services/`.
+- **Branding**: Replace logos and update theme colors in Tailwind config as needed.
 
 ## Contributing
 
-We welcome contributions! If you'd like to contribute to Blaze Mail, please fork the repository and submit a pull request.
-
-### Steps to Contribute
-
-1. Fork the repository.
-
-2. Create a feature branch:
-   ```bash
-   git checkout -b feature/YourFeature
-   ```
-3. Commit your changes:
-   ```bash
-   git commit -m "Add your feature"
-   ```
-4. Push to the branch:
-   ```bash
-   git push origin feature/YourFeature
-   ```
-5. Open a pull request.
+Contributions are welcome! Please open issues or pull requests for bug fixes, features, or improvements.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License. See [LICENSE](./LICENSE) for details.
 
-## Contact
-
-For any inquiries or support, please open an issue in the GitHub repository or contact the maintainers.
+## Credits
+- [Lucide Icons](https://lucide.dev/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [React Query](https://tanstack.com/query/latest)
+- [Vite](https://vitejs.dev/)
 
 ---
 
-Thank you for your interest in Blaze Mail!
+**TempBox** – Making email privacy accessible, one temporary inbox at a time.
