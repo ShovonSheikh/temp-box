@@ -10,35 +10,29 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.0.0",
+    "@tanstack/react-query": "",
     "@types/dompurify": "^3.0.5",
-    "date-fns": "^2.30.0",
+    "date-fns": "",
     "dompurify": "^3.2.6",
-    "lucide-react": "^0.400.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-hot-toast": "^2.4.1"
+    "lucide-react": "",
+    "react": "",
+    "react-dom": "",
+    "react-hot-toast": ""
   },
   "devDependencies": {
-    "@eslint/js": "^9.0.0",
-    "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.0",
-    "autoprefixer": "^10.4.19",
-    "eslint": "^9.0.0",
-    "eslint-plugin-react-hooks": "^5.0.0",
-    "eslint-plugin-react-refresh": "^0.4.0",
-    "globals": "^15.0.0",
-    "postcss": "^8.4.38",
-    "tailwindcss": "^3.4.4",
-    "typescript": "^5.5.0",
-    "typescript-eslint": "^8.0.0",
-    "vite": "^5.3.0"
-  },
-  "resolutions": {
-    "@rollup/rollup-linux-x64-gnu": "4.18.0"
-  },
-  "overrides": {
-    "@rollup/rollup-linux-x64-gnu": "4.18.0"
+    "@eslint/js": "",
+    "@types/react": "",
+    "@types/react-dom": "",
+    "@vitejs/plugin-react": "",
+    "autoprefixer": "",
+    "eslint": "",
+    "eslint-plugin-react-hooks": "",
+    "eslint-plugin-react-refresh": "",
+    "globals": "",
+    "postcss": "",
+    "tailwindcss": "",
+    "typescript": "",
+    "typescript-eslint": "",
+    "vite": ""
   }
 }

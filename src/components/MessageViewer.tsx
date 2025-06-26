@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { X, Mail, Clock, User, ArrowLeft } from 'lucide-react';
+import { X, Mail, Clock, User, ArrowLeft, Copy } from 'lucide-react';
 import { useMessage } from '../hooks/useMessage';
 import { formatDistanceToNow } from '../utils/dateUtils';
 import toast from 'react-hot-toast';
 import DOMPurify from 'dompurify';
-import { CopyButton } from './CopyButton';
 
 interface MessageViewerProps {
   messageId: string | null;
@@ -41,24 +40,16 @@ export function MessageViewer({ messageId, onClose }: MessageViewerProps) {
     }
   };
 
-  // Enhanced HTML sanitization with more allowed tags and attributes
+  // Sanitize HTML content to prevent XSS
   const sanitizeHTML = (html: string) => {
     return DOMPurify.sanitize(html, {
       ALLOWED_TAGS: [
         'p', 'br', 'div', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
         'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'a', 'img',
-        'table', 'tr', 'td', 'th', 'thead', 'tbody', 'tfoot', 'blockquote',
-        'pre', 'code', 'hr', 'center', 'font', 'small', 'big', 'sub', 'sup'
+        'table', 'tr', 'td', 'th', 'thead', 'tbody', 'blockquote'
       ],
-      ALLOWED_ATTR: [
-        'href', 'src', 'alt', 'title', 'style', 'class', 'id', 'width', 'height',
-        'border', 'cellpadding', 'cellspacing', 'align', 'valign', 'bgcolor',
-        'color', 'size', 'face', 'target'
-      ],
+      ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'style'],
       ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
-      ALLOW_DATA_ATTR: false,
-      FORBID_TAGS: ['script', 'object', 'embed', 'form', 'input', 'button'],
-      FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur'],
     });
   };
 
@@ -87,11 +78,14 @@ export function MessageViewer({ messageId, onClose }: MessageViewerProps) {
             </h3>
           </div>
           <div className="flex items-center space-x-2">
-            <CopyButton 
-              onCopy={handleCopy}
+            <button
+              onClick={handleCopy}
+              className="p-2 text-slate-600 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 active:scale-95 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2"
               title="Copy message content"
-              className={isLoading || !message ? 'opacity-50 cursor-not-allowed' : ''}
-            />
+              disabled={isLoading || !message}
+            >
+              <Copy className="w-5 h-5" />
+            </button>
             <button
               onClick={onClose}
               className="p-2 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 focus:outline-none focus:ring-2 focus:ring-violet-400"
@@ -177,49 +171,45 @@ export function MessageViewer({ messageId, onClose }: MessageViewerProps) {
                 ))}
               </div>
 
-              {/* Message Content - Enhanced Scrollable Container */}
-              <div className="flex-1 overflow-auto">
-                <div className="p-6">
-                  <div className="min-h-[200px] max-h-[60vh] overflow-y-auto">
-                    {/* HTML mode with improved rendering and sanitization */}
-                    {viewMode === 'html' && message.html && message.html.length > 0 ? (
-                      <div
-                        className="prose prose-slate dark:prose-invert max-w-none break-words overflow-x-auto"
-                        style={{
-                          color: '#1e293b', // Improved contrast for light mode
-                          lineHeight: '1.6',
-                          maxHeight: 'none', // Remove height restrictions
-                        }}
-                        dangerouslySetInnerHTML={{ 
-                          __html: sanitizeHTML(message.html.join(''))
-                        }}
-                      />
-                    ) : viewMode === 'text' && message.text ? (
-                      <pre 
-                        className="whitespace-pre-wrap font-mono text-sm break-words overflow-x-auto"
-                        style={{
-                          color: '#1e293b', // Improved contrast for text mode
-                          backgroundColor: '#f8fafc',
-                          padding: '1rem',
-                          borderRadius: '0.5rem',
-                          lineHeight: '1.6',
-                          border: '1px solid #e2e8f0',
-                        }}
-                      >
-                        {message.text}
-                      </pre>
-                    ) : viewMode === 'raw' ? (
-                      <pre className="whitespace-pre-wrap text-slate-600 dark:text-slate-400 font-mono text-xs break-words overflow-x-auto bg-slate-50 dark:bg-slate-700/30 p-4 rounded-lg border border-slate-200 dark:border-slate-600">
-                        {JSON.stringify(message, null, 2)}
-                      </pre>
-                    ) : (
-                      <div className="text-center py-8">
-                        <p className="text-slate-600 dark:text-slate-400">
-                          No content available for this view mode
-                        </p>
-                      </div>
-                    )}
-                  </div>
+              {/* Message Content - Scrollable */}
+              <div className="flex-1 overflow-auto p-6">
+                <div className="min-h-[200px]">
+                  {/* HTML mode with improved rendering and sanitization */}
+                  {viewMode === 'html' && message.html && message.html.length > 0 ? (
+                    <div
+                      className="prose prose-slate dark:prose-invert max-w-none break-words"
+                      style={{
+                        color: '#1e293b', // Improved contrast for light mode
+                        lineHeight: '1.6',
+                      }}
+                      dangerouslySetInnerHTML={{ 
+                        __html: sanitizeHTML(message.html.join(''))
+                      }}
+                    />
+                  ) : viewMode === 'text' && message.text ? (
+                    <pre 
+                      className="whitespace-pre-wrap font-mono text-sm break-words overflow-x-auto"
+                      style={{
+                        color: '#1e293b', // Improved contrast for text mode
+                        backgroundColor: '#f8fafc',
+                        padding: '1rem',
+                        borderRadius: '0.5rem',
+                        lineHeight: '1.6',
+                      }}
+                    >
+                      {message.text}
+                    </pre>
+                  ) : viewMode === 'raw' ? (
+                    <pre className="whitespace-pre-wrap text-slate-600 dark:text-slate-400 font-mono text-xs break-words overflow-x-auto bg-slate-50 dark:bg-slate-700/30 p-4 rounded-lg">
+                      {JSON.stringify(message, null, 2)}
+                    </pre>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-slate-600 dark:text-slate-400">
+                        No content available for this view mode
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

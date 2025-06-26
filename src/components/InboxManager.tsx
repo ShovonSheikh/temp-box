@@ -1,5 +1,6 @@
 import { 
   Inbox, 
+  Copy, 
   RotateCcw, 
   Trash2,
   Loader2,
@@ -8,7 +9,7 @@ import {
   RefreshCw,
   Bug,
   Settings,
-  Mail,
+  Shield,
 } from 'lucide-react';
 import { useInbox } from '../hooks/useInbox';
 import { formatDistanceToNow } from 'date-fns';
@@ -16,10 +17,6 @@ import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { SystemStats } from './SystemStats';
 import { authService } from '../services/authService';
-import { SkeletonMessageItem } from './SkeletonMessageItem';
-import { EmptyState } from './EmptyState';
-import { CopyButton } from './CopyButton';
-import { AnimatedProgressBar } from './AnimatedProgressBar';
 
 interface InboxManagerProps {
   onMessageSelect: (messageId: string) => void;
@@ -70,7 +67,7 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
     }
   }, [expiresAt, isAuthenticated, isExpired]);
 
-  // Timer countdown effect with proper cleanup
+  // Timer countdown effect
   useEffect(() => {
     if (!isAuthenticated || isExpired || isDeleting || timerExpired || timer <= 0) return;
     
@@ -171,7 +168,7 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
     setShowSystemStats(true);
   };
 
-  // Show domain loading/error states with skeleton loaders
+  // Show domain loading/error states
   if (domainsLoading) {
     return (
       <div className="space-y-6">
@@ -184,11 +181,13 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
               </h2>
             </div>
           </div>
-          <EmptyState
-            icon={Loader2}
-            title="Fetching Available Domains"
-            description="We're loading the available email domains for your inbox. This should only take a few seconds."
-          />
+          <div className="flex flex-col items-center justify-center space-y-3 py-8">
+            <Loader2 className="w-6 h-6 text-violet-600 dark:text-violet-400 animate-spin" />
+            <p className="text-slate-600 dark:text-slate-400">
+              Fetching available email domains...
+            </p>
+            <p className="text-sm text-slate-500 dark:text-slate-500">This should only take a few seconds</p>
+          </div>
         </div>
       </div>
     );
@@ -206,19 +205,19 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
               </h2>
             </div>
           </div>
-          <EmptyState
-            icon={AlertCircle}
-            title="Failed to Load Email Domains"
-            description={domainsErrorMessage?.message || 'Unable to fetch available domains. Please check your connection and try again.'}
-            button={
-              <button
-                onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2"
-              >
-                Retry
-              </button>
-            }
-          />
+          <div className="flex flex-col items-center justify-center space-y-3 py-8">
+            <AlertCircle className="w-8 h-8 text-red-500 dark:text-red-400" />
+            <p className="text-red-600 dark:text-red-400 font-medium">Failed to load email domains</p>
+            <p className="text-sm text-slate-500 dark:text-slate-500 text-center">
+              {domainsErrorMessage?.message || 'Unable to fetch available domains'}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2"
+            >
+              Retry
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -239,27 +238,31 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
               </h2>
             </div>
           </div>
-          {hasActiveDomains ? (
-            <EmptyState
-              icon={Loader2}
-              title={isCreating ? 'Setting Up Your Secure Inbox' : 'Preparing Your Inbox'}
-              description="We're creating your temporary email address. This should only take a few seconds."
-            />
-          ) : (
-            <EmptyState
-              icon={AlertCircle}
-              title="No Email Domains Available"
-              description="There are currently no active email domains available for creating inboxes. Please try again later."
-              button={
+          <div className="flex flex-col items-center justify-center space-y-3 py-8">
+            {hasActiveDomains ? (
+              <>
+                <Loader2 className="w-6 h-6 text-violet-600 dark:text-violet-400 animate-spin" />
+                <p className="text-slate-600 dark:text-slate-400">
+                  {isCreating ? 'Setting up your secure inbox...' : 'Preparing your inbox...'}
+                </p>
+                <p className="text-sm text-slate-500 dark:text-slate-500">This should only take a few seconds</p>
+              </>
+            ) : (
+              <>
+                <AlertCircle className="w-8 h-8 text-orange-500 dark:text-orange-400" />
+                <p className="text-orange-600 dark:text-orange-400 font-medium">No email domains available</p>
+                <p className="text-sm text-slate-500 dark:text-slate-500 text-center">
+                  There are currently no active email domains available for creating inboxes.
+                </p>
                 <button
                   onClick={() => window.location.reload()}
                   className="px-4 py-2 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2"
                 >
                   Refresh Page
                 </button>
-              }
-            />
-          )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -294,13 +297,22 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
                   .padStart(2, '0')}`} left
               </span>
             )}
-            {/* Enhanced Timer progress bar */}
+            {/* Timer progress bar */}
             {isAuthenticated && !isExpired && !timerExpired && timer > 0 && (
-              <AnimatedProgressBar 
-                progress={timerProgress} 
-                timeLeft={timer}
-                className="ml-4"
-              />
+              <div className="ml-4 w-32 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden" title="Timer progress">
+                <div
+                  className="h-2 transition-all duration-500"
+                  style={{
+                    width: `${timerProgress}%`,
+                    background:
+                      timer > 300 // 5 minutes
+                        ? '#4ade80' // green-400
+                        : timer > 120 // 2 minutes
+                        ? '#facc15' // yellow-400
+                        : '#f87171', // red-400
+                  }}
+                ></div>
+              </div>
             )}
             {timerExpired && (
               <span className="ml-4 px-3 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-200 font-mono text-xs">
@@ -349,15 +361,18 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
           </div>
         </div>
 
-        {/* Email Address with enhanced copy button */}
+        {/* Email Address */}
         <div className="flex items-center space-x-3 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl">
           <div className="flex-1 font-mono text-sm text-slate-900 dark:text-slate-100 select-all">
             {account.address}
           </div>
-          <CopyButton 
-            onCopy={() => copyToClipboard(account.address)}
-            title="Copy email address"
-          />
+          <button
+            onClick={() => copyToClipboard(account.address)}
+            className="p-2 text-slate-600 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 active:scale-95 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2"
+            title="Copy to clipboard"
+          >
+            <Copy className="w-5 h-5" />
+          </button>
         </div>
 
         {isExpired && (
@@ -428,46 +443,54 @@ export function InboxManager({ onMessageSelect }: InboxManagerProps) {
 
         <div className="messages-container max-h-96 overflow-y-auto scroll-smooth">
           {messagesLoading ? (
-            <div className="divide-y divide-slate-200/50 dark:divide-slate-700/50">
-              {/* Show skeleton loaders while loading */}
-              {Array.from({ length: 3 }).map((_, index) => (
-                <SkeletonMessageItem key={index} />
-              ))}
+            <div className="p-6">
+              <div className="flex items-center justify-center space-x-3">
+                <Loader2 className="w-5 h-5 text-violet-600 dark:text-violet-400 animate-spin" />
+                <p className="text-slate-600 dark:text-slate-400">Fetching messages...</p>
+              </div>
             </div>
           ) : isMessagesError ? (
-            <EmptyState
-              icon={AlertCircle}
-              title="Failed to Load Messages"
-              description={messagesError?.message || 'Unknown error occurred while fetching messages.'}
-              button={
+            <div className="p-6">
+              <div className="flex flex-col items-center justify-center space-y-3">
+                <AlertCircle className="w-8 h-8 text-red-500 dark:text-red-400" />
+                <p className="text-red-600 dark:text-red-400 font-medium">Failed to load messages</p>
+                <p className="text-sm text-slate-500 dark:text-slate-500 text-center">
+                  {messagesError?.message || 'Unknown error occurred'}
+                </p>
                 <button
                   onClick={handleRefresh}
                   className="px-4 py-2 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2"
                 >
                   Try Again
                 </button>
-              }
-            />
+              </div>
+            </div>
           ) : !Array.isArray(messages) ? (
-            <EmptyState
-              icon={AlertCircle}
-              title="Data Format Error"
-              description={`Messages data is not in expected format: ${typeof messages}`}
-              button={
+            <div className="p-6">
+              <div className="flex flex-col items-center justify-center space-y-3">
+                <AlertCircle className="w-8 h-8 text-orange-500 dark:text-orange-400" />
+                <p className="text-orange-600 dark:text-orange-400 font-medium">Data format error</p>
+                <p className="text-sm text-slate-500 dark:text-slate-500 text-center">
+                  Messages data is not in expected format: {typeof messages}
+                </p>
                 <button
                   onClick={handleRefresh}
                   className="px-4 py-2 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2"
                 >
                   Refresh
                 </button>
-              }
-            />
+              </div>
+            </div>
           ) : messages.length === 0 ? (
-            <EmptyState
-              icon={Mail}
-              title="No Messages Yet"
-              description="Send an email to your temporary address and it will appear here instantly. Your inbox is ready to receive messages!"
-            />
+            <div className="p-6">
+              <div className="flex items-center justify-center space-x-3 mb-4">
+                <Inbox className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                <p className="text-slate-600 dark:text-slate-400">No messages yet</p>
+              </div>
+              <p className="text-sm text-center text-slate-500 dark:text-slate-500">
+                Send an email to your temporary address - it will appear here instantly
+              </p>
+            </div>
           ) : (
             <div className="divide-y divide-slate-200/50 dark:divide-slate-700/50">
               {messages.map((message, index) => {
