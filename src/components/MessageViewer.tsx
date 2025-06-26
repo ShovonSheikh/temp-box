@@ -40,16 +40,21 @@ export function MessageViewer({ messageId, onClose }: MessageViewerProps) {
     }
   };
 
-  // Sanitize HTML content to prevent XSS
+  // Expanded allowed tags and attributes for safe HTML rendering
   const sanitizeHTML = (html: string) => {
     return DOMPurify.sanitize(html, {
       ALLOWED_TAGS: [
         'p', 'br', 'div', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
         'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'a', 'img',
-        'table', 'tr', 'td', 'th', 'thead', 'tbody', 'blockquote'
+        'table', 'tr', 'td', 'th', 'thead', 'tbody', 'tfoot', 'blockquote',
+        'hr', 'pre', 'code', 'sup', 'sub', 'small', 'mark', 'del', 'ins',
+        'figure', 'figcaption', 'col', 'colgroup', 'caption', 'dl', 'dt', 'dd'
       ],
-      ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'style'],
-      ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+      ALLOWED_ATTR: [
+        'href', 'src', 'alt', 'title', 'style', 'width', 'height', 'align', 'valign',
+        'colspan', 'rowspan', 'target', 'rel', 'class', 'id', 'name', 'type', 'value', 'data-*'
+      ],
+      ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$))/i,
     });
   };
 
@@ -172,7 +177,8 @@ export function MessageViewer({ messageId, onClose }: MessageViewerProps) {
               </div>
 
               {/* Message Content - Scrollable */}
-              <div className="flex-1 overflow-auto p-6">
+              {/* The following div ensures vertical scrolling for long emails. */}
+              <div className="flex-1 overflow-auto p-6" style={{ maxHeight: '50vh' }}>
                 <div className="min-h-[200px]">
                   {/* HTML mode with improved rendering and sanitization */}
                   {viewMode === 'html' && message.html && message.html.length > 0 ? (

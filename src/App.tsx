@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { 
@@ -19,9 +19,6 @@ import {
   Github,
   Send
 } from 'lucide-react';
-import { InboxManager } from './components/InboxManager';
-import { MessageViewer } from './components/MessageViewer';
-import { BlogModal } from './components/BlogModal';
 import { ThemeToggle } from './components/ThemeToggle';
 import { AdSenseAd } from './components/AdSenseAd';
 import { blogPosts } from './data/blog';
@@ -34,6 +31,10 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+const InboxManager = lazy(() => import('./components/InboxManager').then(module => ({ default: module.InboxManager })));
+const MessageViewer = lazy(() => import('./components/MessageViewer').then(module => ({ default: module.MessageViewer })));
+const BlogModal = lazy(() => import('./components/BlogModal').then(module => ({ default: module.BlogModal })));
 
 function AppContent() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -114,30 +115,10 @@ function AppContent() {
   const handleFeedbackSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFeedbackSubmitting(true);
-    
     try {
-      // Simulate API call - replace with actual backend endpoint
-      const response = await fetch('/api/feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(feedback),
-      });
-      
-      if (response.ok) {
-        setFeedbackSuccess(true);
-        setFeedback({ name: '', email: '', message: '' });
-        setTimeout(() => {
-          setFeedbackSuccess(false);
-          setShowFeedbackModal(false);
-        }, 2000);
-      } else {
-        throw new Error('Failed to submit feedback');
-      }
-    } catch (error) {
-      // For now, simulate success since backend isn't implemented
-      console.log('Feedback submitted:', feedback);
+      // TODO: Replace with actual backend endpoint
+      // await fetch('/api/feedback', { ... });
+      // Simulate success for now
       setFeedbackSuccess(true);
       setFeedback({ name: '', email: '', message: '' });
       setTimeout(() => {
@@ -239,7 +220,9 @@ function AppContent() {
             </div>
             <div className="flex-1 overflow-hidden">
               <div className="p-6 h-full overflow-y-auto">
-                <InboxManager onMessageSelect={setSelectedMessageId} />
+                <Suspense fallback={<div className="p-8 text-center">Loading inbox...</div>}>
+                  <InboxManager onMessageSelect={setSelectedMessageId} />
+                </Suspense>
               </div>
             </div>
           </div>
@@ -249,19 +232,17 @@ function AppContent() {
       {/* Hero Section with reduced ad density */}
       <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-7xl mx-auto text-center">
-          {/* Reduced to 2 ad slots in hero section for better compliance */}
+          {/* Reduced to 1 ad slot in hero section for better compliance */}
           <div className="flex flex-wrap justify-center gap-4 mb-8">
-            {[1,2].map((i) => (
-              <div key={`hero-ad-${i}`} className="w-full sm:w-1/2 md:w-1/3 p-2 flex justify-center">
-                <AdSenseAd
-                  client="ca-pub-1369369221989066"
-                  slot={`hero-${i}`}
-                  format="auto"
-                  responsive={true}
-                  style={{ display: 'block', width: '100%', minHeight: '90px' }}
-                />
-              </div>
-            ))}
+            <div className="w-full sm:w-1/2 md:w-1/3 p-2 flex justify-center">
+              <AdSenseAd
+                client="ca-pub-1369369221989066"
+                slot="hero-1"
+                format="auto"
+                responsive={true}
+                style={{ display: 'block', width: '100%', minHeight: '90px' }}
+              />
+            </div>
           </div>
           
           <div className="animate-float mb-8">
@@ -294,18 +275,10 @@ function AppContent() {
         </div>
       </section>
       
-      {/* How It Works - Reduced ads */}
+      {/* How It Works - Removed ad */}
       <section id="howitworks" className="py-20 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-7xl mx-auto">
-          <div className="flex justify-center mb-8">
-            <AdSenseAd
-              client="ca-pub-1369369221989066"
-              slot="howitworks-1"
-              format="auto"
-              responsive={true}
-              style={{ display: 'block', width: '100%', maxWidth: '728px', minHeight: '90px' }}
-            />
-          </div>
+          {/* Ad removed from this section for better UX */}
           
           <h2 className="font-display text-4xl md:text-5xl font-bold text-center mb-16 bg-gradient-to-r from-slate-800 to-slate-600 dark:from-slate-200 dark:to-slate-400 bg-clip-text text-transparent">
             How It Works
@@ -351,18 +324,10 @@ function AppContent() {
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Features Section - Removed ad */}
       <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-7xl mx-auto">
-          <div className="flex justify-center mb-8">
-            <AdSenseAd
-              client="ca-pub-1369369221989066"
-              slot="features-1"
-              format="auto"
-              responsive={true}
-              style={{ display: 'block', width: '100%', maxWidth: '728px', minHeight: '90px' }}
-            />
-          </div>
+          {/* Ad removed from this section for better UX */}
           
           <h2 className="font-display text-4xl md:text-5xl font-bold text-center mb-16 bg-gradient-to-r from-slate-800 to-slate-600 dark:from-slate-200 dark:to-slate-400 bg-clip-text text-transparent">
             Features That Matter
@@ -536,97 +501,18 @@ function AppContent() {
       </footer>
 
       {/* Modals */}
-      <BlogModal 
-        post={activeBlogPost || null} 
-        onClose={() => setActiveBlogModal(null)} 
-      />
-      
-      <MessageViewer 
-        messageId={selectedMessageId} 
-        onClose={() => setSelectedMessageId(null)} 
-      />
-
-      {/* Enhanced Feedback Modal */}
-      {showFeedbackModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-md shadow-2xl border border-slate-200/50 dark:border-slate-700/50 p-8 relative">
-            <button
-              onClick={() => setShowFeedbackModal(false)}
-              className="absolute top-4 right-4 p-2 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 focus:outline-none focus:ring-2 focus:ring-violet-400"
-              aria-label="Close feedback modal"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <h2 className="font-display text-2xl font-bold text-slate-800 dark:text-slate-200 mb-4 text-center">Give Feedback</h2>
-            {feedbackSuccess ? (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Check className="w-8 h-8 text-green-600 dark:text-green-400" />
-                </div>
-                <p className="text-green-600 dark:text-green-400 font-medium">Thank you for your feedback!</p>
-              </div>
-            ) : (
-              <form onSubmit={handleFeedbackSubmit} className="space-y-4">
-                <input
-                  type="text"
-                  className="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/30 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-400 transition-colors"
-                  placeholder="Your Name"
-                  value={feedback.name}
-                  onChange={e => setFeedback(f => ({ ...f, name: e.target.value }))}
-                  required
-                />
-                <input
-                  type="email"
-                  className="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/30 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-400 transition-colors"
-                  placeholder="Your Email"
-                  value={feedback.email}
-                  onChange={e => setFeedback(f => ({ ...f, email: e.target.value }))}
-                  required
-                />
-                <textarea
-                  className="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/30 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-400 min-h-[100px] resize-none transition-colors"
-                  placeholder="Your Feedback"
-                  value={feedback.message}
-                  onChange={e => setFeedback(f => ({ ...f, message: e.target.value }))}
-                  required
-                />
-                <button
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-semibold py-3 rounded-xl shadow-lg hover:from-violet-700 hover:to-cyan-700 transition-all duration-300 disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 flex items-center justify-center space-x-2"
-                  disabled={feedbackSubmitting}
-                >
-                  {feedbackSubmitting ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Submitting...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4" />
-                      <span>Submit Feedback</span>
-                    </>
-                  )}
-                </button>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Toast Notifications */}
-      <Toaster
-        position="bottom-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: 'rgba(255, 255, 255, 0.9)',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(148, 163, 184, 0.2)',
-            borderRadius: '16px',
-            color: '#334155',
-          },
-        }}
-      />
+      <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+        <BlogModal 
+          post={activeBlogPost || null} 
+          onClose={() => setActiveBlogModal(null)} 
+        />
+      </Suspense>
+      <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+        <MessageViewer 
+          messageId={selectedMessageId} 
+          onClose={() => setSelectedMessageId(null)} 
+        />
+      </Suspense>
     </div>
   );
 }
