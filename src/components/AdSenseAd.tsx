@@ -35,9 +35,9 @@ export function AdSenseAd({
       }
       
       // Check if container has valid width
-      if (adRef.current.offsetWidth === 0) {
+      if (adRef.current.offsetWidth < 70) {
         // Retry after a short delay to allow container to render
-        setTimeout(pushAd, 100);
+        setTimeout(pushAd, 200);
         return;
       }
       
