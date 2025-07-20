@@ -181,9 +181,8 @@ export function MessageViewer({ messageId, onClose, embedded = false }: MessageV
                       }
                       return (
                         <div
-                          className="prose prose-slate dark:prose-invert max-w-none break-words overflow-wrap-anywhere"
+                          className="max-w-none break-words overflow-wrap-anywhere text-slate-900 dark:text-slate-100"
                           style={{
-                            color: '#1e293b', // Improved contrast for light mode
                             lineHeight: '1.6',
                             wordBreak: 'break-word',
                             overflowWrap: 'anywhere',
@@ -196,12 +195,8 @@ export function MessageViewer({ messageId, onClose, embedded = false }: MessageV
                     })()
                   ) : viewMode === 'text' && message.text ? (
                     <pre 
-                      className="whitespace-pre-wrap font-mono text-sm break-words overflow-x-hidden"
+                      className="whitespace-pre-wrap font-mono text-sm break-words overflow-x-hidden text-slate-900 dark:text-slate-100 bg-slate-50 dark:bg-slate-700/30 p-4 rounded-lg"
                       style={{
-                        color: '#1e293b', // Improved contrast for text mode
-                        backgroundColor: '#f8fafc',
-                        padding: '1rem',
-                        borderRadius: '0.5rem',
                         lineHeight: '1.6',
                         wordBreak: 'break-all',
                         overflowWrap: 'anywhere',
@@ -374,9 +369,8 @@ export function MessageViewer({ messageId, onClose, embedded = false }: MessageV
                       }
                       return (
                         <div
-                          className="prose prose-slate dark:prose-invert max-w-none break-words overflow-wrap-anywhere"
+                          className="max-w-none break-words overflow-wrap-anywhere text-slate-900 dark:text-slate-100"
                           style={{
-                            color: '#1e293b', // Improved contrast for light mode
                             lineHeight: '1.6',
                             wordBreak: 'break-word',
                             overflowWrap: 'anywhere',
@@ -389,12 +383,8 @@ export function MessageViewer({ messageId, onClose, embedded = false }: MessageV
                     })()
                   ) : viewMode === 'text' && message.text ? (
                     <pre 
-                      className="whitespace-pre-wrap font-mono text-sm break-words overflow-x-hidden"
+                      className="whitespace-pre-wrap font-mono text-sm break-words overflow-x-hidden text-slate-900 dark:text-slate-100 bg-slate-50 dark:bg-slate-700/30 p-4 rounded-lg"
                       style={{
-                        color: '#1e293b', // Improved contrast for text mode
-                        backgroundColor: '#f8fafc',
-                        padding: '1rem',
-                        borderRadius: '0.5rem',
                         lineHeight: '1.6',
                         wordBreak: 'break-all',
                         overflowWrap: 'anywhere',
