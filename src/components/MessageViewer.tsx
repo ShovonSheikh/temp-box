@@ -49,13 +49,48 @@ export function MessageViewer({ messageId, onClose, embedded = false }: MessageV
         'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'a', 'img',
         'table', 'tr', 'td', 'th', 'thead', 'tbody', 'tfoot', 'blockquote',
         'hr', 'pre', 'code', 'sup', 'sub', 'small', 'mark', 'del', 'ins',
-        'figure', 'figcaption', 'col', 'colgroup', 'caption', 'dl', 'dt', 'dd'
+        'figure', 'figcaption', 'col', 'colgroup', 'caption', 'dl', 'dt', 'dd',
+        'center', 'font', 'nobr', 'wbr'
       ],
       ALLOWED_ATTR: [
+        // Standard attributes
         'href', 'src', 'alt', 'title', 'style', 'width', 'height', 'align', 'valign',
-        'colspan', 'rowspan', 'target', 'rel', 'class', 'id', 'name', 'type', 'value', 'data-*'
+        'colspan', 'rowspan', 'target', 'rel', 'class', 'id', 'name', 'type', 'value', 'data-*',
+        // HTML email specific attributes
+        'bgcolor', 'background', 'border', 'cellpadding', 'cellspacing', 'color',
+        'face', 'size', 'marginwidth', 'marginheight', 'topmargin', 'leftmargin',
+        'rightmargin', 'bottommargin', 'hspace', 'vspace', 'clear', 'nowrap',
+        // Table and layout attributes
+        'rules', 'frame', 'summary', 'axis', 'headers', 'scope', 'abbr',
+        // Form attributes (for email buttons/links)
+        'method', 'action', 'enctype', 'accept-charset', 'autocomplete',
+        // Media attributes
+        'controls', 'loop', 'muted', 'poster', 'preload'
+      ],
+      // Allow common CSS properties used in HTML emails
+      ADD_CSS_PROPERTIES: [
+        'background-color', 'background-image', 'background-repeat', 'background-position',
+        'background-size', 'background-attachment', 'border-radius', 'box-shadow',
+        'text-shadow', 'font-family', 'font-size', 'font-weight', 'font-style',
+        'line-height', 'letter-spacing', 'word-spacing', 'text-decoration',
+        'text-transform', 'text-align', 'vertical-align', 'white-space',
+        'padding', 'margin', 'border', 'border-top', 'border-right', 'border-bottom', 'border-left',
+        'border-color', 'border-style', 'border-width', 'outline', 'display',
+        'position', 'top', 'right', 'bottom', 'left', 'z-index', 'float', 'clear',
+        'overflow', 'visibility', 'opacity', 'cursor', 'list-style', 'table-layout',
+        'border-collapse', 'border-spacing', 'empty-cells', 'caption-side'
       ],
       ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$))/i,
+      // Keep relative URLs and data URLs for embedded content
+      ALLOW_DATA_ATTR: true,
+      // Preserve whitespace for email formatting
+      KEEP_CONTENT: true,
+      // Allow unknown protocols that might be used in email templates
+      ALLOW_UNKNOWN_PROTOCOLS: false,
+      // Return a DOM fragment for better performance
+      RETURN_DOM_FRAGMENT: false,
+      // Return trusted types if supported
+      RETURN_TRUSTED_TYPE: false
     });
   };
 
