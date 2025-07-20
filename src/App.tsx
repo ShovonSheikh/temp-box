@@ -106,22 +106,6 @@ function AppContent() {
 
   const activeBlogPost = blogPosts.find(p => p.id === activeBlogModal);
 
-  // Load AdSense script on component mount
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.async = true;
-    script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1369369221989066';
-    script.crossOrigin = 'anonymous';
-    document.head.appendChild(script);
-
-    return () => {
-      const existingScript = document.querySelector('script[src*="adsbygoogle.js"]');
-      if (existingScript) {
-        document.head.removeChild(existingScript);
-      }
-    };
-  }, []);
-
   // Enhanced feedback submission with proper backend integration
   const handleFeedbackSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -24,11 +24,23 @@ export function AdSenseAd({
   className = '' 
 }: AdSenseAdProps) {
   const adRef = useRef<HTMLModElement>(null);
-  const isAdPushed = useRef(false);
 
   useEffect(() => {
-    // Only push the ad once per component instance and ensure content is present
-    if (adRef.current && !isAdPushed.current) {
+    const pushAd = () => {
+      if (!adRef.current) return;
+      
+      // Check if ad is already processed
+      if (adRef.current.getAttribute('data-adsbygoogle-status') === 'done') {
+        return;
+      }
+      
+      // Check if container has valid width
+      if (adRef.current.offsetWidth === 0) {
+        // Retry after a short delay to allow container to render
+        setTimeout(pushAd, 100);
+        return;
+      }
+      
       try {
         // Initialize adsbygoogle array if it doesn't exist
         if (!window.adsbygoogle) {
@@ -41,7 +53,6 @@ export function AdSenseAd({
         if (hasContent) {
           // Push the ad to the queue
           window.adsbygoogle.push({});
-          isAdPushed.current = true;
           
           console.log(`AdSense ad pushed for slot: ${slot}`);
         } else {
@@ -50,12 +61,10 @@ export function AdSenseAd({
       } catch (error) {
         console.error('Error pushing AdSense ad:', error);
       }
-    }
-  }, [slot]);
-
-  // Reset the push flag when slot changes (component reuse)
-  useEffect(() => {
-    isAdPushed.current = false;
+    };
+    
+    // Start the ad push process
+    pushAd();
   }, [slot]);
 
   const defaultStyle: React.CSSProperties = {
