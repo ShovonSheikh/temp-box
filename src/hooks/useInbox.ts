@@ -52,6 +52,20 @@ export function useInbox() {
 
   const queryClient = useQueryClient();
 
+  // Shared function to reset inbox state
+  const resetInboxState = useCallback(() => {
+    setInboxState({
+      account: null,
+      password: '',
+      isAuthenticated: false,
+      expiresAt: null,
+      token: null,
+    });
+    mailApi.clearToken();
+    localStorage.removeItem('inbox-state');
+    queryClient.removeQueries({ queryKey: ['messages'] });
+  }, [queryClient]);
+
   // Fetch available domains
   const { 
     data: domains = [], 
@@ -137,6 +151,8 @@ export function useInbox() {
     },
     onError: (error) => {
       console.error('❌ Failed to create inbox:', error);
+      // Reset state if inbox creation fails to ensure clean state
+      resetInboxState();
       toast.error(error.message || 'Failed to create inbox', {
         icon: '❌',
       });
@@ -193,6 +209,16 @@ export function useInbox() {
       return failureCount < 2; // Reduced retry attempts
     },
     retryDelay: (attemptIndex) => Math.min(2000 * 2 ** attemptIndex, 10000), // Faster retry with cap
+    onError: (error) => {
+      // Handle account no longer exists error
+      if (error.message === 'This account no longer exists.') {
+        console.log('🔄 Account no longer exists, resetting inbox state');
+        resetInboxState();
+        toast.error('Account has expired. Please create a new inbox.', {
+          icon: '⏰',
+        });
+      }
+    },
   });
 
   const messages = useMemo(() => messagesQuery.data ?? [], [messagesQuery.data]);
@@ -220,16 +246,7 @@ export function useInbox() {
   const deleteInboxMutation = useMutation({
     mutationFn: () => mailApi.deleteAccount(inboxState.account!.id),
     onSuccess: () => {
-      setInboxState({
-        account: null,
-        password: '',
-        isAuthenticated: false,
-        expiresAt: null,
-        token: null,
-      });
-      mailApi.clearToken();
-      localStorage.removeItem('inbox-state');
-      queryClient.removeQueries({ queryKey: ['messages'] });
+      resetInboxState();
       toast.success('Inbox deleted successfully!', {
         icon: '🗑️',
       });
@@ -296,21 +313,11 @@ export function useInbox() {
   useEffect(() => {
     if (isExpired && inboxState.account) {
       console.log('⏰ Inbox expired, cleaning up...');
-      setInboxState({
-        account: null,
-        password: '',
-        isAuthenticated: false,
-        expiresAt: null,
-        token: null,
-      });
-      mailApi.clearToken();
-      localStorage.removeItem('inbox-state');
-      queryClient.removeQueries({ queryKey: ['messages'] });
+      resetInboxState();
       toast.error('Inbox has expired', {
         icon: '⏰',
       });
     }
-  }, [isExpired, inboxState.account, queryClient]);
 
   // Enhanced error handling with reduced retry frequency
   useEffect(() => {

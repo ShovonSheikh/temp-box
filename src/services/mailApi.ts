@@ -142,6 +142,12 @@ class MailApiService {
         error = { message: errorText };
       }
       
+      // Handle account no longer exists error
+      if (response.status === 401 && error.message === 'This account no longer exists.') {
+        console.log('🔑 Account no longer exists, clearing token');
+        this.clearToken();
+      }
+      
       throw new Error(error['hydra:description'] || error.message || 'Failed to fetch messages');
     }
 
@@ -279,6 +285,21 @@ class MailApiService {
     });
     
     if (!response.ok) {
+      // Handle account no longer exists error - treat as success since account is already gone
+      if (response.status === 401) {
+        try {
+          const errorText = await response.text();
+          const error = JSON.parse(errorText);
+          if (error.message === 'This account no longer exists.') {
+            console.log('✅ Account already deleted on server, clearing token');
+            this.clearToken();
+            return; // Treat as successful deletion
+          }
+        } catch {
+          // If we can't parse the error, fall through to original error handling
+        }
+      }
+      
       console.error('❌ Failed to delete account');
       throw new Error('Failed to delete account');
     }
