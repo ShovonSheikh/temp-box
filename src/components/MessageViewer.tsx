@@ -168,37 +168,64 @@ export function MessageViewer({ messageId, onClose, embedded = false }: MessageV
                 <div className="min-h-[200px]">
                   {/* HTML mode with improved rendering and sanitization */}
                   {viewMode === 'html' && message.html && message.html.length > 0 ? (
-                    <div
-                      className="prose prose-slate dark:prose-invert max-w-none break-words"
-                      style={{
-                        color: '#1e293b', // Improved contrast for light mode
-                        lineHeight: '1.6',
-                      }}
-                      dangerouslySetInnerHTML={{ 
-                        __html: sanitizeHTML(message.html.join(''))
-                      }}
-                    />
+                    (() => {
+                      const htmlContent = sanitizeHTML(message.html.join(''));
+                      if (!htmlContent.trim()) {
+                        return (
+                          <div className="text-center py-8">
+                            <p className="text-slate-600 dark:text-slate-400">
+                              HTML content is empty or was filtered for security
+                            </p>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div
+                          className="prose prose-slate dark:prose-invert max-w-none break-words overflow-wrap-anywhere"
+                          style={{
+                            color: '#1e293b', // Improved contrast for light mode
+                            lineHeight: '1.6',
+                            wordBreak: 'break-word',
+                            overflowWrap: 'anywhere',
+                          }}
+                          dangerouslySetInnerHTML={{ 
+                            __html: htmlContent
+                          }}
+                        />
+                      );
+                    })()
                   ) : viewMode === 'text' && message.text ? (
                     <pre 
-                      className="whitespace-pre-wrap font-mono text-sm break-words overflow-x-auto"
+                      className="whitespace-pre-wrap font-mono text-sm break-words overflow-x-hidden"
                       style={{
                         color: '#1e293b', // Improved contrast for text mode
                         backgroundColor: '#f8fafc',
                         padding: '1rem',
                         borderRadius: '0.5rem',
                         lineHeight: '1.6',
+                        wordBreak: 'break-all',
+                        overflowWrap: 'anywhere',
                       }}
                     >
                       {message.text}
                     </pre>
                   ) : viewMode === 'raw' ? (
-                    <pre className="whitespace-pre-wrap text-slate-600 dark:text-slate-400 font-mono text-xs break-words overflow-x-auto bg-slate-50 dark:bg-slate-700/30 p-4 rounded-lg">
+                    <pre 
+                      className="whitespace-pre-wrap text-slate-600 dark:text-slate-400 font-mono text-xs break-words overflow-x-hidden bg-slate-50 dark:bg-slate-700/30 p-4 rounded-lg"
+                      style={{
+                        wordBreak: 'break-all',
+                        overflowWrap: 'anywhere',
+                      }}
+                    >
                       {JSON.stringify(message, null, 2)}
                     </pre>
                   ) : (
                     <div className="text-center py-8">
                       <p className="text-slate-600 dark:text-slate-400">
-                        No content available for this view mode
+                        {viewMode === 'html' ? 
+                          'This email does not contain HTML content' : 
+                          'No content available for this view mode'
+                        }
                       </p>
                     </div>
                   )}
@@ -334,37 +361,64 @@ export function MessageViewer({ messageId, onClose, embedded = false }: MessageV
                 <div className="min-h-[200px]">
                   {/* HTML mode with improved rendering and sanitization */}
                   {viewMode === 'html' && message.html && message.html.length > 0 ? (
-                    <div
-                      className="prose prose-slate dark:prose-invert max-w-none break-words"
-                      style={{
-                        color: '#1e293b', // Improved contrast for light mode
-                        lineHeight: '1.6',
-                      }}
-                      dangerouslySetInnerHTML={{ 
-                        __html: sanitizeHTML(message.html.join(''))
-                      }}
-                    />
+                    (() => {
+                      const htmlContent = sanitizeHTML(message.html.join(''));
+                      if (!htmlContent.trim()) {
+                        return (
+                          <div className="text-center py-8">
+                            <p className="text-slate-600 dark:text-slate-400">
+                              HTML content is empty or was filtered for security
+                            </p>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div
+                          className="prose prose-slate dark:prose-invert max-w-none break-words overflow-wrap-anywhere"
+                          style={{
+                            color: '#1e293b', // Improved contrast for light mode
+                            lineHeight: '1.6',
+                            wordBreak: 'break-word',
+                            overflowWrap: 'anywhere',
+                          }}
+                          dangerouslySetInnerHTML={{ 
+                            __html: htmlContent
+                          }}
+                        />
+                      );
+                    })()
                   ) : viewMode === 'text' && message.text ? (
                     <pre 
-                      className="whitespace-pre-wrap font-mono text-sm break-words overflow-x-auto"
+                      className="whitespace-pre-wrap font-mono text-sm break-words overflow-x-hidden"
                       style={{
                         color: '#1e293b', // Improved contrast for text mode
                         backgroundColor: '#f8fafc',
                         padding: '1rem',
                         borderRadius: '0.5rem',
                         lineHeight: '1.6',
+                        wordBreak: 'break-all',
+                        overflowWrap: 'anywhere',
                       }}
                     >
                       {message.text}
                     </pre>
                   ) : viewMode === 'raw' ? (
-                    <pre className="whitespace-pre-wrap text-slate-600 dark:text-slate-400 font-mono text-xs break-words overflow-x-auto bg-slate-50 dark:bg-slate-700/30 p-4 rounded-lg">
+                    <pre 
+                      className="whitespace-pre-wrap text-slate-600 dark:text-slate-400 font-mono text-xs break-words overflow-x-hidden bg-slate-50 dark:bg-slate-700/30 p-4 rounded-lg"
+                      style={{
+                        wordBreak: 'break-all',
+                        overflowWrap: 'anywhere',
+                      }}
+                    >
                       {JSON.stringify(message, null, 2)}
                     </pre>
                   ) : (
                     <div className="text-center py-8">
                       <p className="text-slate-600 dark:text-slate-400">
-                        No content available for this view mode
+                        {viewMode === 'html' ? 
+                          'This email does not contain HTML content' : 
+                          'No content available for this view mode'
+                        }
                       </p>
                     </div>
                   )}
