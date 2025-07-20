@@ -45,6 +45,8 @@ export function MessageViewer({ messageId, onClose, embedded = false }: MessageV
   const sanitizeHTML = (html: string) => {
     return DOMPurify.sanitize(html, {
       ALLOWED_TAGS: [
+        // Document structure
+        'html', 'head', 'body', 'title', 'meta', 'style',
         'p', 'br', 'div', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
         'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'a', 'img',
         'table', 'tr', 'td', 'th', 'thead', 'tbody', 'tfoot', 'blockquote',
@@ -56,6 +58,8 @@ export function MessageViewer({ messageId, onClose, embedded = false }: MessageV
         // Standard attributes
         'href', 'src', 'alt', 'title', 'style', 'width', 'height', 'align', 'valign',
         'colspan', 'rowspan', 'target', 'rel', 'class', 'id', 'name', 'type', 'value', 'data-*',
+        // Document attributes
+        'lang', 'charset', 'content', 'http-equiv', 'viewport',
         // HTML email specific attributes
         'bgcolor', 'background', 'border', 'cellpadding', 'cellspacing', 'color',
         'face', 'size', 'marginwidth', 'marginheight', 'topmargin', 'leftmargin',
@@ -69,6 +73,8 @@ export function MessageViewer({ messageId, onClose, embedded = false }: MessageV
       ],
       // Allow common CSS properties used in HTML emails
       ADD_CSS_PROPERTIES: [
+        // Layout and positioning
+        'max-width', 'min-width', 'max-height', 'min-height', 'width', 'height',
         'background-color', 'background-image', 'background-repeat', 'background-position',
         'background-size', 'background-attachment', 'border-radius', 'box-shadow',
         'text-shadow', 'font-family', 'font-size', 'font-weight', 'font-style',
@@ -78,7 +84,9 @@ export function MessageViewer({ messageId, onClose, embedded = false }: MessageV
         'border-color', 'border-style', 'border-width', 'outline', 'display',
         'position', 'top', 'right', 'bottom', 'left', 'z-index', 'float', 'clear',
         'overflow', 'visibility', 'opacity', 'cursor', 'list-style', 'table-layout',
-        'border-collapse', 'border-spacing', 'empty-cells', 'caption-side'
+        'border-collapse', 'border-spacing', 'empty-cells', 'caption-side',
+        // Additional email-specific properties
+        'color', 'background', 'text-indent', 'word-wrap', 'word-break'
       ],
       ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$))/i,
       // Keep relative URLs and data URLs for embedded content
@@ -87,6 +95,9 @@ export function MessageViewer({ messageId, onClose, embedded = false }: MessageV
       KEEP_CONTENT: true,
       // Allow unknown protocols that might be used in email templates
       ALLOW_UNKNOWN_PROTOCOLS: false,
+      // Allow CSS in style tags
+      ADD_TAGS: ['style'],
+      ADD_ATTR: ['style'],
       // Return a DOM fragment for better performance
       RETURN_DOM_FRAGMENT: false,
       // Return trusted types if supported
