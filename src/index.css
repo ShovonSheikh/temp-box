@@ -135,10 +135,31 @@ input:focus-visible {
 /* Ensure email backgrounds work in both modes */
 .email-content [bgcolor] {
   /* Preserve bgcolor attributes */
-  background-color: attr(bgcolor) !important;
+  background-color: attr(bgcolor);
 }
 
 .email-content [background] {
   /* Preserve background attributes */
-  background-image: attr(background) !important;
+  background-image: attr(background);
+}
+
+/* Allow email styles to override application styles */
+.email-content * {
+  /* Reset inheritance that might interfere */
+  color: unset;
+  background: unset;
+  font-family: unset;
+  font-size: unset;
+  line-height: unset;
+  margin: unset;
+  padding: unset;
+}
+
+/* Ensure email content is isolated from application styling */
+.email-content {
+  /* Create a new stacking context */
+  isolation: isolate;
+  /* Reset any inherited transforms or filters */
+  transform: none;
+  filter: none;
 }

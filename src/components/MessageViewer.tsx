@@ -232,6 +232,16 @@ export function MessageViewer({ messageId, onClose, embedded = false }: MessageV
                             lineHeight: '1.6',
                             wordBreak: 'break-word',
                             overflowWrap: 'anywhere',
+                            // Reset any inherited styles that might interfere with email styling
+                            all: 'initial',
+                            fontFamily: 'inherit',
+                            fontSize: 'inherit',
+                            color: 'inherit',
+                            // Re-enable text selection and basic styling
+                            userSelect: 'text',
+                            WebkitUserSelect: 'text',
+                            MozUserSelect: 'text',
+                            msUserSelect: 'text',
                           }}
                           dangerouslySetInnerHTML={{ 
                             __html: htmlContent
@@ -420,6 +430,16 @@ export function MessageViewer({ messageId, onClose, embedded = false }: MessageV
                             lineHeight: '1.6',
                             wordBreak: 'break-word',
                             overflowWrap: 'anywhere',
+                            // Reset any inherited styles that might interfere with email styling
+                            all: 'initial',
+                            fontFamily: 'inherit',
+                            fontSize: 'inherit',
+                            color: 'inherit',
+                            // Re-enable text selection and basic styling
+                            userSelect: 'text',
+                            WebkitUserSelect: 'text',
+                            MozUserSelect: 'text',
+                            msUserSelect: 'text',
                           }}
                           dangerouslySetInnerHTML={{ 
                             __html: htmlContent
