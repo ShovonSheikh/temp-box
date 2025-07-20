@@ -318,6 +318,8 @@ export function useInbox() {
         icon: '⏰',
       });
     }
+  }
+  )
 
   // Enhanced error handling with reduced retry frequency
   useEffect(() => {
