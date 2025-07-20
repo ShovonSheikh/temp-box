@@ -99,3 +99,46 @@ input:focus-visible {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
 }
+
+/* Email content specific styles */
+.email-content {
+  /* Preserve email styling while ensuring readability */
+  color: inherit !important;
+}
+
+.email-content table {
+  /* Ensure tables render properly in emails */
+  border-collapse: collapse;
+  mso-table-lspace: 0pt;
+  mso-table-rspace: 0pt;
+}
+
+.email-content img {
+  /* Ensure images display properly */
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.email-content a {
+  /* Preserve link styling from email */
+  color: inherit;
+  text-decoration: inherit;
+}
+
+/* Dark mode adjustments for email content */
+.dark .email-content {
+  /* Ensure email content is readable in dark mode */
+  filter: invert(0);
+}
+
+/* Ensure email backgrounds work in both modes */
+.email-content [bgcolor] {
+  /* Preserve bgcolor attributes */
+  background-color: attr(bgcolor) !important;
+}
+
+.email-content [background] {
+  /* Preserve background attributes */
+  background-image: attr(background) !important;
+}
