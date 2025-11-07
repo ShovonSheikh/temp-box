@@ -35,7 +35,7 @@
     "typescript-eslint": "",
     "vite": ""
   },
-  "overrides": {
-    "@rollup/rollup-linux-x64-gnu": false
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "*"
   }
 }
