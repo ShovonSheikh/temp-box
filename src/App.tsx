@@ -21,7 +21,6 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { ThemeToggle } from './components/ThemeToggle';
-import { AdSenseAd } from './components/AdSenseAd';
 import { blogPosts } from './data/blog';
 
 const queryClient = new QueryClient({
@@ -186,22 +185,9 @@ function AppContent() {
               <div className="absolute bottom-1/4 left-1/3 w-96 h-96 bg-gradient-to-r from-orange-200 to-pink-200 dark:from-orange-900/30 dark:to-pink-900/30 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float-slow animation-delay-4000"></div>
             </div>
 
-            {/* Hero Section with reduced ad density */}
+            {/* Hero Section */}
             <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 relative z-10">
               <div className="max-w-7xl mx-auto text-center">
-                {/* Reduced to 1 ad slot in hero section for better compliance */}
-                <div className="flex flex-wrap justify-center gap-4 mb-8">
-                  <div className="w-full sm:w-1/2 md:w-1/3 p-2 flex justify-center">
-                    <AdSenseAd
-                      client="ca-pub-1369369221989066"
-                      slot="hero-1"
-                      format="auto"
-                      responsive={true}
-                      style={{ display: 'block', width: '100%', minHeight: '90px' }}
-                    />
-                  </div>
-                </div>
-                
                 <div className="animate-float mb-8">
                   <div className="relative inline-block">
                     <Mail className="w-20 h-20 text-violet-600 animate-pulse-gentle" />
@@ -232,7 +218,7 @@ function AppContent() {
               </div>
             </section>
             
-            {/* How It Works - Removed ad */}
+            {/* How It Works */}
             <section id="howitworks" className="py-20 px-4 sm:px-6 lg:px-8 relative z-10">
               <div className="max-w-7xl mx-auto">
                 <h2 className="font-display text-4xl md:text-5xl font-bold text-center mb-16 bg-gradient-to-r from-slate-800 to-slate-600 dark:from-slate-200 dark:to-slate-400 bg-clip-text text-transparent">
@@ -279,7 +265,7 @@ function AppContent() {
               </div>
             </section>
 
-            {/* Features Section - Removed ad */}
+            {/* Features Section */}
             <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 relative z-10">
               <div className="max-w-7xl mx-auto">
                 <h2 className="font-display text-4xl md:text-5xl font-bold text-center mb-16 bg-gradient-to-r from-slate-800 to-slate-600 dark:from-slate-200 dark:to-slate-400 bg-clip-text text-transparent">
@@ -357,8 +343,7 @@ function AppContent() {
                       Always Free. No Signups. No Hidden Fees.
                     </h2>
                     <p className="text-xl text-white/90 mb-8 leading-relaxed">
-                      TempBox is committed to providing free temporary email services. 
-                      We're supported by privacy-respecting, non-intrusive advertisements.
+                      TempBox is committed to providing free temporary email services for everyone.
                     </p>
                     <div className="flex flex-wrap justify-center gap-4 text-white/90">
                       <div className="flex items-center">
